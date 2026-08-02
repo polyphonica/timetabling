@@ -23,11 +23,14 @@ import { createSession, updateSession, deleteSession } from "./session-actions";
 
 export default async function DaysPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ day?: string }>;
 }) {
   await requireOrganiserOrAdminPage();
   const { courseId } = await params;
+  const { day: selectedDayId } = await searchParams;
 
   const [course] = await db
     .select({ id: courses.id, name: courses.name })
@@ -57,6 +60,10 @@ export default async function DaysPage({
       .orderBy(people.name),
   ]);
 
+  const visibleDays = selectedDayId
+    ? days.filter((day) => day.id === selectedDayId)
+    : days;
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-8">
       <div>
@@ -71,18 +78,33 @@ export default async function DaysPage({
 
       <AddDayForm courseId={courseId} />
 
+      {selectedDayId && (
+        <Link
+          href={`/courses/${courseId}/days`}
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Show all days
+        </Link>
+      )}
+
       <div className="flex flex-col gap-4">
-        {days.map((day) => (
+        {visibleDays.map((day) => (
           <DayCard
             key={day.id}
             courseId={courseId}
             day={day}
             courseRooms={courseRooms}
             teachers={teachers}
+            showFilterLink={!selectedDayId}
           />
         ))}
         {days.length === 0 && (
           <p className="text-sm text-muted-foreground">No days yet.</p>
+        )}
+        {days.length > 0 && visibleDays.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            That day no longer exists.
+          </p>
         )}
       </div>
     </div>
@@ -94,11 +116,13 @@ async function DayCard({
   day,
   courseRooms,
   teachers,
+  showFilterLink,
 }: {
   courseId: string;
   day: typeof courseDays.$inferSelect;
   courseRooms: { id: string; name: string }[];
   teachers: { id: string; name: string }[];
+  showFilterLink: boolean;
 }) {
   const slots = await db
     .select()
@@ -112,16 +136,24 @@ async function DayCard({
         <div>
           <span className="font-medium">{day.date}</span>
           {day.label && (
-            <span className="ml-2 text-sm text-muted-foreground">
-              {day.label}
-            </span>
+            <span className="ml-2 font-medium">{day.label}</span>
           )}
         </div>
-        <DeleteButton
-          action={deleteDay.bind(null, courseId, day.id)}
-          label="Remove day"
-          confirmMessage="Remove this day? This also deletes its time slots and any sessions scheduled in them."
-        />
+        <div className="flex items-center gap-3">
+          {showFilterLink && (
+            <Link
+              href={`/courses/${courseId}/days?day=${day.id}`}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Show this day only
+            </Link>
+          )}
+          <DeleteButton
+            action={deleteDay.bind(null, courseId, day.id)}
+            label="Remove day"
+            confirmMessage="Remove this day? This also deletes its time slots and any sessions scheduled in them."
+          />
+        </div>
       </div>
 
       <div className="mb-3 flex flex-col gap-2">
