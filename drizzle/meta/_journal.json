@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785389873741,
+      "tag": "0000_cuddly_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785471946651,
+      "tag": "0001_jittery_night_nurse",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785665199018,
+      "tag": "0002_big_swarm",
+      "breakpoints": true
+    }
+  ]
+}
