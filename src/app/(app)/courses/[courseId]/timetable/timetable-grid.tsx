@@ -156,11 +156,7 @@ export function TimetableGrid({
         <div key={day.id} className="overflow-x-auto print:break-inside-avoid print:break-before-page">
           <h2 className="mb-2 font-medium">
             {day.date}
-            {day.label && (
-              <span className="ml-2 text-sm text-muted-foreground">
-                {day.label}
-              </span>
-            )}
+            {day.label && <span className="ml-2">{day.label}</span>}
           </h2>
           <table className="w-full border-collapse text-sm">
             <thead>
