@@ -10,12 +10,18 @@ export default async function PeoplePage() {
 
   const allPeople = await db.select().from(people).orderBy(people.name);
 
+  const totalTeachers = allPeople.filter((person) => person.isTeacher).length;
+  const totalStudents = allPeople.length - totalTeachers;
+
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold">People</h1>
         <CreatePersonDialog />
       </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        {totalStudents} students · {totalTeachers} teachers · {allPeople.length} total
+      </p>
       <ul className="flex flex-col gap-2">
         {allPeople.map((person) => (
           <li key={person.id}>
