@@ -131,12 +131,12 @@ async function DayCard({
     .orderBy(timeSlots.startTime);
 
   return (
-    <div className="rounded-md border p-4">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="overflow-hidden rounded-lg border-2">
+      <div className="flex items-center justify-between border-b bg-muted px-4 py-3">
         <div>
-          <span className="font-medium">{day.date}</span>
+          <span className="font-semibold">{day.date}</span>
           {day.label && (
-            <span className="ml-2 font-medium">{day.label}</span>
+            <span className="ml-2 font-semibold">{day.label}</span>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -156,9 +156,16 @@ async function DayCard({
         </div>
       </div>
 
-      <div className="mb-3 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 p-4">
         {slots.map((slot) => (
-          <div key={slot.id} className="rounded-md bg-muted/50 px-3 py-2">
+          <div
+            key={slot.id}
+            className={
+              slot.kind === "session"
+                ? "rounded-md border border-primary/20 bg-primary/10 px-3 py-2"
+                : "rounded-md bg-muted/50 px-3 py-2"
+            }
+          >
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 {slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}
@@ -191,9 +198,9 @@ async function DayCard({
         {slots.length === 0 && (
           <p className="text-sm text-muted-foreground">No time slots yet.</p>
         )}
-      </div>
 
-      <AddSlotForm courseId={courseId} courseDayId={day.id} />
+        <AddSlotForm courseId={courseId} courseDayId={day.id} />
+      </div>
     </div>
   );
 }
