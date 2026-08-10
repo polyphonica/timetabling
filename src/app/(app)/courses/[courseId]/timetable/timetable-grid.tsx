@@ -29,12 +29,30 @@ export function TimetableGrid({
   currentPersonId: string;
 }) {
   const [mode, setMode] = useState<Mode>("room");
+  const [selectedDayIds, setSelectedDayIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeDrag, setActiveDrag] = useState<{
     personId: string;
     name: string;
   } | null>(null);
   const router = useRouter();
+
+  function toggleDay(dayId: string) {
+    setSelectedDayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayId)) {
+        next.delete(dayId);
+      } else {
+        next.add(dayId);
+      }
+      return next;
+    });
+  }
+
+  const visibleDays =
+    selectedDayIds.size === 0
+      ? data.days
+      : data.days.filter((d) => selectedDayIds.has(d.id));
 
   function toggleSelected(personId: string) {
     setSelectedIds((prev) => {
@@ -133,26 +151,58 @@ export function TimetableGrid({
 
   const grid = (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2 print:hidden">
-        <Button
-          type="button"
-          variant={mode === "room" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setMode("room")}
-        >
-          By room
-        </Button>
-        <Button
-          type="button"
-          variant={mode === "teacher" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setMode("teacher")}
-        >
-          By teacher
-        </Button>
+      <div className="flex flex-wrap items-center gap-4 print:hidden">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={mode === "room" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMode("room")}
+          >
+            By room
+          </Button>
+          <Button
+            type="button"
+            variant={mode === "teacher" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMode("teacher")}
+          >
+            By teacher
+          </Button>
+        </div>
+        {data.days.length > 1 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Days:</span>
+            {data.days.map((day) => (
+              <Button
+                key={day.id}
+                type="button"
+                variant={
+                  selectedDayIds.size === 0 || selectedDayIds.has(day.id)
+                    ? "default"
+                    : "outline"
+                }
+                size="sm"
+                onClick={() => toggleDay(day.id)}
+              >
+                {day.label ?? day.date}
+              </Button>
+            ))}
+            {selectedDayIds.size > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedDayIds(new Set())}
+              >
+                Show all
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {data.days.map((day) => (
+      {visibleDays.map((day) => (
         <div key={day.id} className="overflow-x-auto print:break-inside-avoid print:break-before-page">
           <h2 className="mb-2 font-medium">
             {day.date}
