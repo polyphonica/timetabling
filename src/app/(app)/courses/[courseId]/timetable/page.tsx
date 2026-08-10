@@ -61,7 +61,15 @@ export default async function TimetablePage({
             </div>
           )}
         </div>
-        <PrintButton />
+        <div className="flex items-center gap-2 print:hidden">
+          <Link
+            href={`/courses/${courseId}/timetable/summary`}
+            className="text-sm underline"
+          >
+            Summary / print
+          </Link>
+          <PrintButton />
+        </div>
       </div>
 
       <TimetableGrid
