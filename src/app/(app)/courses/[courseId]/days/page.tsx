@@ -170,7 +170,7 @@ async function DayCard({
               <span className="flex items-center gap-2">
                 {slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}
                 <Badge variant={slot.kind === "break" ? "secondary" : "default"}>
-                  {slot.kind}
+                  {slot.kind === "session" ? "time slot" : slot.kind}
                 </Badge>
                 {slot.label && (
                   <span className="text-muted-foreground">{slot.label}</span>
