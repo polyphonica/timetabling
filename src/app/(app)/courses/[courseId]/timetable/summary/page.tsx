@@ -130,17 +130,8 @@ export default async function TimetableSummaryPage({
                         >
                           <div className="flex flex-col gap-1">
                             {slot.sessions.map((session) => (
-                              <div key={session.id}>
-                                <div className="font-medium leading-tight">
-                                  {session.title}
-                                </div>
-                                {session.teachers.length > 0 && (
-                                  <div className="leading-tight text-gray-500">
-                                    {session.teachers
-                                      .map((t) => t.name)
-                                      .join(", ")}
-                                  </div>
-                                )}
+                              <div key={session.id} className="font-medium leading-tight">
+                                {session.title}
                               </div>
                             ))}
                           </div>
