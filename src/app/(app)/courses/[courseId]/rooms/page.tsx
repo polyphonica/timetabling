@@ -6,7 +6,8 @@ import { courses, rooms } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { DeleteButton } from "@/components/delete-button";
 import { AddRoomForm } from "./add-room-form";
-import { deleteRoom } from "./actions";
+import { EditRoomDialog } from "./edit-room-dialog";
+import { deleteRoom, updateRoom } from "./actions";
 
 export default async function RoomsPage({
   params,
@@ -53,7 +54,13 @@ export default async function RoomsPage({
             className="flex items-center justify-between rounded-md border px-3 py-2"
           >
             <span>{room.name}</span>
-            <DeleteButton action={deleteRoom.bind(null, courseId, room.id)} />
+            <div className="flex items-center gap-1">
+              <EditRoomDialog
+                action={updateRoom.bind(null, courseId, room.id)}
+                currentName={room.name}
+              />
+              <DeleteButton action={deleteRoom.bind(null, courseId, room.id)} />
+            </div>
           </li>
         ))}
         {courseRooms.length === 0 && (

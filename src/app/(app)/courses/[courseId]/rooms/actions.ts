@@ -31,6 +31,25 @@ export async function createRoom(
   return undefined;
 }
 
+export async function updateRoom(
+  courseId: string,
+  roomId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireOrganiserOrAdmin();
+
+  const parsed = roomSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  await db.update(rooms).set({ name: parsed.data.name }).where(eq(rooms.id, roomId));
+
+  revalidatePath(`/courses/${courseId}/rooms`);
+  return undefined;
+}
+
 export async function deleteRoom(courseId: string, roomId: string) {
   await requireOrganiserOrAdmin();
   await db.delete(rooms).where(eq(rooms.id, roomId));
