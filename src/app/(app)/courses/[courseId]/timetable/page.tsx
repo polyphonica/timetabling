@@ -63,6 +63,12 @@ export default async function TimetablePage({
         </div>
         <div className="flex items-center gap-2 print:hidden">
           <Link
+            href={`/courses/${courseId}/messages`}
+            className="text-sm underline"
+          >
+            Messages
+          </Link>
+          <Link
             href={`/courses/${courseId}/timetable/summary`}
             className="text-sm underline"
           >
