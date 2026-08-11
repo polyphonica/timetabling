@@ -56,6 +56,12 @@ export default async function CourseDetailPage({
         >
           Timetable
         </Link>
+        <Link
+          href={`/courses/${course.id}/tasks`}
+          className="text-sm underline"
+        >
+          Tasks
+        </Link>
       </div>
 
       <Card>
