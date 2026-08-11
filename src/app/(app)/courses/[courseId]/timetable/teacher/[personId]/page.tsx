@@ -111,7 +111,12 @@ export default async function TeacherTimetablePage({
                             {slot.startTime.slice(0, 5)}–
                             {slot.endTime.slice(0, 5)}
                           </span>
-                          <span className="font-medium">{session.title}</span>
+                          <Link
+                            href={`/courses/${courseId}/timetable/session/${session.id}`}
+                            className="font-medium underline hover:no-underline print:no-underline"
+                          >
+                            {session.title}
+                          </Link>
                           {session.roomName && (
                             <Badge variant="secondary">{session.roomName}</Badge>
                           )}
