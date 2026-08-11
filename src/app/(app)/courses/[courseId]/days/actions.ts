@@ -76,6 +76,34 @@ export async function createTimeSlot(
   return undefined;
 }
 
+export async function updateTimeSlot(
+  courseId: string,
+  slotId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireOrganiserOrAdmin();
+
+  const parsed = slotSchema.safeParse({
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    kind: formData.get("kind"),
+    label: formData.get("label") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  if (parsed.data.endTime <= parsed.data.startTime) {
+    return { error: "End time must be after start time" };
+  }
+
+  await db.update(timeSlots).set(parsed.data).where(eq(timeSlots.id, slotId));
+
+  revalidatePath(`/courses/${courseId}/days`);
+  return undefined;
+}
+
 export async function deleteTimeSlot(courseId: string, slotId: string) {
   await requireOrganiserOrAdmin();
   await db.delete(timeSlots).where(eq(timeSlots.id, slotId));

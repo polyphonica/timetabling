@@ -17,8 +17,9 @@ import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/delete-button";
 import { AddDayForm } from "./add-day-form";
 import { AddSlotForm } from "./add-slot-form";
+import { EditSlotDialog } from "./edit-slot-dialog";
 import { SessionFormDialog } from "./session-form-dialog";
-import { deleteDay, deleteTimeSlot } from "./actions";
+import { deleteDay, deleteTimeSlot, updateTimeSlot } from "./actions";
 import { createSession, updateSession, deleteSession } from "./session-actions";
 
 export default async function DaysPage({
@@ -176,14 +177,25 @@ async function DayCard({
                   <span className="text-muted-foreground">{slot.label}</span>
                 )}
               </span>
-              <DeleteButton
-                action={deleteTimeSlot.bind(null, courseId, slot.id)}
-                confirmMessage={
-                  slot.kind === "session"
-                    ? "Remove this time slot? Any session scheduled in it will also be deleted."
-                    : undefined
-                }
-              />
+              <div className="flex items-center gap-1">
+                <EditSlotDialog
+                  action={updateTimeSlot.bind(null, courseId, slot.id)}
+                  initial={{
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    kind: slot.kind,
+                    label: slot.label,
+                  }}
+                />
+                <DeleteButton
+                  action={deleteTimeSlot.bind(null, courseId, slot.id)}
+                  confirmMessage={
+                    slot.kind === "session"
+                      ? "Remove this time slot? Any session scheduled in it will also be deleted."
+                      : undefined
+                  }
+                />
+              </div>
             </div>
             {slot.kind === "session" && (
               <SessionsForSlot
