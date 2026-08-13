@@ -3,7 +3,8 @@ import { skillTypes } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { DeleteButton } from "@/components/delete-button";
 import { AddSkillTypeForm } from "./add-skill-type-form";
-import { deleteSkillType } from "./actions";
+import { EditSkillTypeDialog } from "./edit-skill-type-dialog";
+import { deleteSkillType, updateSkillType } from "./actions";
 
 export default async function SkillTypesPage() {
   await requireOrganiserOrAdminPage();
@@ -40,6 +41,11 @@ export default async function SkillTypesPage() {
                 </span>
               )}
             </span>
+            <EditSkillTypeDialog
+              action={updateSkillType.bind(null, type.id)}
+              currentName={type.name}
+              currentGroup={type.group}
+            />
             <DeleteButton action={deleteSkillType.bind(null, type.id)} />
           </li>
         ))}

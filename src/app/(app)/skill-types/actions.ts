@@ -38,6 +38,34 @@ export async function createSkillType(
   return undefined;
 }
 
+export async function updateSkillType(
+  skillTypeId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireOrganiserOrAdmin();
+
+  const parsed = skillTypeSchema.safeParse({
+    name: formData.get("name"),
+    group: formData.get("group") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  try {
+    await db
+      .update(skillTypes)
+      .set(parsed.data)
+      .where(eq(skillTypes.id, skillTypeId));
+  } catch {
+    return { error: "That skill type name is already in use." };
+  }
+
+  revalidatePath("/skill-types");
+  return undefined;
+}
+
 export async function deleteSkillType(skillTypeId: string) {
   await requireOrganiserOrAdmin();
   try {
