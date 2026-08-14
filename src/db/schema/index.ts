@@ -3,3 +3,4 @@ export * from "./people";
 export * from "./sessions";
 export * from "./messaging";
 export * from "./tasks";
+export * from "./registrations";

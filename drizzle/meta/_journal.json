@@ -36,6 +36,13 @@
       "when": 1786100000000,
       "tag": "0004_session_pieces",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786688255098,
+      "tag": "0005_course_registrations",
+      "breakpoints": true
     }
   ]
 }

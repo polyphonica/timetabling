@@ -62,6 +62,12 @@ export default async function CourseDetailPage({
         >
           Tasks
         </Link>
+        <Link
+          href={`/courses/${course.id}/registrations`}
+          className="text-sm underline"
+        >
+          Registrations
+        </Link>
       </div>
 
       <Card>
