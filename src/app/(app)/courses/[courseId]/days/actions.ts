@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { courseDays, timeSlots } from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string } | undefined;
 
@@ -20,6 +21,7 @@ export async function createDay(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = daySchema.safeParse({
     date: formData.get("date"),
@@ -37,6 +39,7 @@ export async function createDay(
 
 export async function deleteDay(courseId: string, dayId: string) {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
   await db.delete(courseDays).where(eq(courseDays.id, dayId));
   revalidatePath(`/courses/${courseId}/days`);
 }
@@ -55,6 +58,7 @@ export async function createTimeSlot(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = slotSchema.safeParse({
     startTime: formData.get("startTime"),
@@ -83,6 +87,7 @@ export async function updateTimeSlot(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = slotSchema.safeParse({
     startTime: formData.get("startTime"),
@@ -106,6 +111,7 @@ export async function updateTimeSlot(
 
 export async function deleteTimeSlot(courseId: string, slotId: string) {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
   await db.delete(timeSlots).where(eq(timeSlots.id, slotId));
   revalidatePath(`/courses/${courseId}/days`);
 }

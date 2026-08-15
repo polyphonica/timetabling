@@ -4,6 +4,7 @@ import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { people, skills, courseRegistrations } from "@/db/schema";
+import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string; success?: boolean } | undefined;
 
@@ -20,6 +21,17 @@ export async function registerStudent(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  try {
+    await requireCourseOpen(courseId);
+  } catch (e) {
+    return {
+      error:
+        e instanceof Error
+          ? e.message
+          : "Registration is closed for this course.",
+    };
+  }
+
   const parsed = registrationSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),

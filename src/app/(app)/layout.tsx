@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { desc } from "drizzle-orm";
 import { auth } from "@/auth";
-import { db } from "@/db";
-import { courses } from "@/db/schema";
+import { getLiveCourse } from "@/lib/course-status";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const MANAGE_NAV_ITEMS = [
@@ -20,11 +18,7 @@ export default async function AppLayout({
   const canManage =
     session?.user?.role === "admin" || session?.user?.role === "organiser";
 
-  const [activeCourse] = await db
-    .select({ id: courses.id })
-    .from(courses)
-    .orderBy(desc(courses.startDate))
-    .limit(1);
+  const liveCourse = await getLiveCourse();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -33,9 +27,22 @@ export default async function AppLayout({
           <Link href="/" className="font-heading text-lg font-semibold text-primary">
             Higham Hall
           </Link>
-          {activeCourse && (
+          {liveCourse &&
+            (canManage ? (
+              <Link
+                href={`/courses/${liveCourse.id}`}
+                className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground hover:bg-accent/70"
+              >
+                Administering: {liveCourse.name}
+              </Link>
+            ) : (
+              <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
+                {liveCourse.name}
+              </span>
+            ))}
+          {liveCourse && (
             <Link
-              href={`/courses/${activeCourse.id}/timetable`}
+              href={`/courses/${liveCourse.id}/timetable`}
               className="text-sm text-muted-foreground hover:text-primary"
             >
               Timetable

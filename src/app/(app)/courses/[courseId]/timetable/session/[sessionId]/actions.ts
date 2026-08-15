@@ -9,6 +9,7 @@ import {
   sessionTeachers,
 } from "@/db/schema";
 import { requireSession, requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 
 async function assertCanEdit(sessionId: string) {
   const authSession = await requireSession();
@@ -39,6 +40,7 @@ export async function setParticipantInstrument(
   skillTypeId: string | null,
 ) {
   await assertCanEdit(sessionId);
+  await requireCourseOpen(courseId);
   await db
     .update(sessionParticipants)
     .set({ skillTypeId })
@@ -60,6 +62,7 @@ export async function addPiece(
   formData: FormData,
 ): Promise<{ error?: string } | undefined> {
   await assertCanEdit(sessionId);
+  await requireCourseOpen(courseId);
   const title = (formData.get("title") as string | null)?.trim();
   if (!title) return { error: "Title is required." };
 
@@ -79,6 +82,7 @@ export async function deletePiece(courseId: string, pieceId: string) {
   if (!piece) return;
 
   await assertCanEdit(piece.sessionId);
+  await requireCourseOpen(courseId);
   await db.delete(sessionPieces).where(eq(sessionPieces.id, pieceId));
   revalidatePath(
     `/courses/${courseId}/timetable/session/${piece.sessionId}`,

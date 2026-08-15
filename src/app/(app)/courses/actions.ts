@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { courses } from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string } | undefined;
 
@@ -52,6 +53,7 @@ export async function updateCourse(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = parseCourseForm(formData);
   if (!parsed.success) {
@@ -63,4 +65,36 @@ export async function updateCourse(
   revalidatePath(`/courses/${courseId}`);
   revalidatePath("/courses");
   return undefined;
+}
+
+function revalidateCoursePaths(courseId: string) {
+  for (const path of [
+    "",
+    "/days",
+    "/rooms",
+    "/timetable",
+    "/tasks",
+    "/registrations",
+  ]) {
+    revalidatePath(`/courses/${courseId}${path}`);
+  }
+  revalidatePath("/courses");
+}
+
+export async function reopenCourse(courseId: string) {
+  await requireOrganiserOrAdmin();
+  await db
+    .update(courses)
+    .set({ reopened: true })
+    .where(eq(courses.id, courseId));
+  revalidateCoursePaths(courseId);
+}
+
+export async function closeCourseNow(courseId: string) {
+  await requireOrganiserOrAdmin();
+  await db
+    .update(courses)
+    .set({ reopened: false })
+    .where(eq(courses.id, courseId));
+  revalidateCoursePaths(courseId);
 }

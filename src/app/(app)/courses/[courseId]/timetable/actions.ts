@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { sessions, sessionParticipants, people } from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 import {
   getOverlappingSessions,
   getPeopleInSessions,
@@ -19,6 +20,11 @@ export async function addParticipant(
   personId: string,
 ): Promise<ParticipantActionResult> {
   await requireOrganiserOrAdmin();
+  try {
+    await requireCourseOpen(courseId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Course is closed." };
+  }
 
   const [session] = await db
     .select({ timeSlotId: sessions.timeSlotId })
@@ -58,6 +64,7 @@ export async function removeParticipant(
   personId: string,
 ) {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
   await db
     .delete(sessionParticipants)
     .where(

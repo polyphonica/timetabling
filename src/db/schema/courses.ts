@@ -5,6 +5,7 @@ import {
   date,
   time,
   timestamp,
+  boolean,
   pgEnum,
 } from "drizzle-orm/pg-core";
 
@@ -15,6 +16,9 @@ export const courses = pgTable("courses", {
   endDate: date("end_date").notNull(),
   venue: text("venue"),
   createdFromCourseId: uuid("created_from_course_id"),
+  // Courses auto-close (read-only) once endDate has passed; this lets an
+  // organiser/admin manually override that to fix something afterwards.
+  reopened: boolean("reopened").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, sessionTeachers, people } from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 import {
   getOverlappingSessions,
   getPeopleInSessions,
@@ -76,6 +77,7 @@ export async function createSession(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = parseSessionForm(formData);
   if (!parsed.success) {
@@ -111,6 +113,7 @@ export async function updateSession(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = parseSessionForm(formData);
   if (!parsed.success) {
@@ -148,6 +151,7 @@ export async function updateSession(
 
 export async function deleteSession(courseId: string, sessionId: string) {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
   await db.delete(sessions).where(eq(sessions.id, sessionId));
   revalidatePath(`/courses/${courseId}/days`);
 }

@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useDroppable } from "@dnd-kit/core";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import type { SessionInfo } from "@/lib/timetable-data";
 import { MessageThreadDialog } from "@/components/message-thread-dialog";
 import { removeParticipant } from "./actions";
@@ -30,7 +31,12 @@ export function SessionCell({
 
   function handleRemove(personId: string) {
     startTransition(async () => {
-      await removeParticipant(courseId, session.id, personId);
+      try {
+        await removeParticipant(courseId, session.id, personId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Couldn't remove.");
+        return;
+      }
       router.refresh();
     });
   }

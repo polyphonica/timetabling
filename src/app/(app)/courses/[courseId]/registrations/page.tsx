@@ -11,6 +11,7 @@ import {
   skillTypes,
 } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
+import { isCourseClosed } from "@/lib/course-status";
 import {
   Table,
   TableBody,
@@ -19,6 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getUnregisteredPeople } from "./actions";
+import { AddRegistrationForm } from "./add-registration-form";
+import {
+  RegistrationActions,
+  RegistrationStatusBadge,
+} from "./registration-status";
 
 export default async function CourseRegistrationsPage({
   params,
@@ -42,6 +49,9 @@ export default async function CourseRegistrationsPage({
     .select({
       registrationId: courseRegistrations.id,
       notes: courseRegistrations.notes,
+      status: courseRegistrations.status,
+      rejectionReason: courseRegistrations.rejectionReason,
+      rejectionNotes: courseRegistrations.rejectionNotes,
       createdAt: courseRegistrations.createdAt,
       personId: people.id,
       name: people.name,
@@ -52,6 +62,9 @@ export default async function CourseRegistrationsPage({
     .innerJoin(people, eq(courseRegistrations.personId, people.id))
     .where(eq(courseRegistrations.courseId, courseId))
     .orderBy(desc(courseRegistrations.createdAt));
+
+  const unregisteredPeople = await getUnregisteredPeople(courseId);
+  const closed = isCourseClosed(course);
 
   const personIds = registrations.map((r) => r.personId);
   const personSkills =
@@ -84,7 +97,15 @@ export default async function CourseRegistrationsPage({
         <h1 className="mt-2 text-xl font-semibold">
           Registrations ({registrations.length})
         </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Only accepted students appear in the timetable&apos;s student list
+          and can be scheduled into sessions.
+        </p>
       </div>
+
+      {!closed && (
+        <AddRegistrationForm courseId={courseId} people={unregisteredPeople} />
+      )}
 
       {registrations.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -98,8 +119,10 @@ export default async function CourseRegistrationsPage({
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Instruments</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Notes</TableHead>
               <TableHead>Submitted</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -118,10 +141,34 @@ export default async function CourseRegistrationsPage({
                 <TableCell className="whitespace-normal">
                   {(skillsByPerson.get(r.personId) ?? []).join(", ")}
                 </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <RegistrationStatusBadge status={r.status} />
+                    {r.status === "rejected" && r.rejectionReason && (
+                      <span className="text-xs text-muted-foreground">
+                        {REASON_LABELS[r.rejectionReason]}
+                        {r.rejectionReason === "other" &&
+                          r.rejectionNotes &&
+                          `: ${r.rejectionNotes}`}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="whitespace-normal">
                   {r.notes}
                 </TableCell>
                 <TableCell>{format(r.createdAt, "d MMM yyyy")}</TableCell>
+                <TableCell>
+                  {!closed && (
+                    <RegistrationActions
+                      courseId={courseId}
+                      registrationId={r.registrationId}
+                      status={r.status}
+                      rejectionReason={r.rejectionReason}
+                      rejectionNotes={r.rejectionNotes}
+                    />
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -130,3 +177,9 @@ export default async function CourseRegistrationsPage({
     </div>
   );
 }
+
+const REASON_LABELS: Record<"course_full" | "inexperienced" | "other", string> = {
+  course_full: "Course full",
+  inexperienced: "Inexperienced",
+  other: "Other",
+};

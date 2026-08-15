@@ -4,15 +4,17 @@ import { db } from "@/db";
 import { courses } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getLiveCourse, isCourseClosed } from "@/lib/course-status";
 import { CreateCourseDialog } from "./create-course-dialog";
 
 export default async function CoursesPage() {
   await requireOrganiserOrAdminPage();
 
-  const allCourses = await db
-    .select()
-    .from(courses)
-    .orderBy(desc(courses.startDate));
+  const [allCourses, liveCourse] = await Promise.all([
+    db.select().from(courses).orderBy(desc(courses.startDate)),
+    getLiveCourse(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-3xl p-8">
@@ -25,7 +27,16 @@ export default async function CoursesPage() {
           <Link key={course.id} href={`/courses/${course.id}`}>
             <Card className="transition-colors hover:bg-accent">
               <CardHeader>
-                <CardTitle>{course.name}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  {course.name}
+                  {course.id === liveCourse?.id ? (
+                    <Badge>Current</Badge>
+                  ) : isCourseClosed(course) ? (
+                    <Badge variant="destructive">Closed</Badge>
+                  ) : (
+                    <Badge variant="secondary">Upcoming</Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 {course.startDate} – {course.endDate}

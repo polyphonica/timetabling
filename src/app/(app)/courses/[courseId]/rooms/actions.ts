@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { rooms } from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string } | undefined;
 
@@ -19,6 +20,7 @@ export async function createRoom(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = roomSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {
@@ -38,6 +40,7 @@ export async function updateRoom(
   formData: FormData,
 ): Promise<ActionState> {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
 
   const parsed = roomSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {
@@ -52,6 +55,7 @@ export async function updateRoom(
 
 export async function deleteRoom(courseId: string, roomId: string) {
   await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
   await db.delete(rooms).where(eq(rooms.id, roomId));
   revalidatePath(`/courses/${courseId}/rooms`);
 }

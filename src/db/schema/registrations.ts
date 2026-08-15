@@ -1,6 +1,18 @@
-import { pgTable, uuid, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, unique, pgEnum } from "drizzle-orm/pg-core";
 import { courses } from "./courses";
 import { people } from "./people";
+
+export const registrationStatusEnum = pgEnum("registration_status", [
+  "pending",
+  "accepted",
+  "rejected",
+]);
+
+export const rejectionReasonEnum = pgEnum("rejection_reason", [
+  "course_full",
+  "inexperienced",
+  "other",
+]);
 
 export const courseRegistrations = pgTable(
   "course_registrations",
@@ -13,6 +25,9 @@ export const courseRegistrations = pgTable(
       .notNull()
       .references(() => people.id, { onDelete: "cascade" }),
     notes: text("notes"),
+    status: registrationStatusEnum("status").notNull().default("pending"),
+    rejectionReason: rejectionReasonEnum("rejection_reason"),
+    rejectionNotes: text("rejection_notes"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

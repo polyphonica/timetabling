@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { db } from "@/db";
 import { courses, skillTypes } from "@/db/schema";
+import { isCourseClosed } from "@/lib/course-status";
 import { RegistrationForm } from "./registration-form";
 
 export default async function RegisterPage({
@@ -35,13 +36,21 @@ export default async function RegisterPage({
           {format(new Date(course.startDate), "d MMMM yyyy")} –{" "}
           {format(new Date(course.endDate), "d MMMM yyyy")}
         </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Please enter your details below to register your interest in this
-          course.
-        </p>
+        {isCourseClosed(course) ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Registration for this course has closed.
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Please enter your details below to register your interest in this
+            course.
+          </p>
+        )}
       </div>
 
-      <RegistrationForm courseId={courseId} skillTypes={types} />
+      {!isCourseClosed(course) && (
+        <RegistrationForm courseId={courseId} skillTypes={types} />
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   sessions,
   sessionTeachers,
   sessionParticipants,
+  courseRegistrations,
 } from "@/db/schema";
 import { getMessageCounts } from "@/lib/messaging";
 
@@ -78,12 +79,12 @@ export async function getCourseTimetable(
       .orderBy(people.name),
     db
       .select({ id: people.id, name: people.name })
-      .from(people)
+      .from(courseRegistrations)
+      .innerJoin(people, eq(courseRegistrations.personId, people.id))
       .where(
         and(
-          eq(people.isTeacher, false),
-          eq(people.isOrganiser, false),
-          eq(people.isAdmin, false),
+          eq(courseRegistrations.courseId, courseId),
+          eq(courseRegistrations.status, "accepted"),
         ),
       )
       .orderBy(people.name),
