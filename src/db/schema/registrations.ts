@@ -6,6 +6,7 @@ export const registrationStatusEnum = pgEnum("registration_status", [
   "pending",
   "accepted",
   "rejected",
+  "withdrawn",
 ]);
 
 export const rejectionReasonEnum = pgEnum("rejection_reason", [
@@ -28,6 +29,7 @@ export const courseRegistrations = pgTable(
     status: registrationStatusEnum("status").notNull().default("pending"),
     rejectionReason: rejectionReasonEnum("rejection_reason"),
     rejectionNotes: text("rejection_notes"),
+    withdrawalNotes: text("withdrawal_notes"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -57,6 +57,13 @@
       "when": 1786769341795,
       "tag": "0007_normal_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786771048661,
+      "tag": "0008_bent_bishop",
+      "breakpoints": true
     }
   ]
 }

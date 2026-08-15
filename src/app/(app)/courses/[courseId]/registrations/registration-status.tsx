@@ -16,9 +16,11 @@ import {
   acceptRegistration,
   rejectRegistration,
   resetRegistrationToPending,
+  restoreRegistration,
+  withdrawRegistration,
 } from "./actions";
 
-type Status = "pending" | "accepted" | "rejected";
+type Status = "pending" | "accepted" | "rejected" | "withdrawn";
 
 const REASON_OPTIONS = [
   { value: "course_full", label: "Course full" },
@@ -30,6 +32,8 @@ export function RegistrationStatusBadge({ status }: { status: Status }) {
   if (status === "accepted") return <Badge>Accepted</Badge>;
   if (status === "rejected")
     return <Badge variant="destructive">Rejected</Badge>;
+  if (status === "withdrawn")
+    return <Badge variant="secondary">Withdrawn</Badge>;
   return <Badge variant="secondary">Pending</Badge>;
 }
 
@@ -39,32 +43,50 @@ export function RegistrationActions({
   status,
   rejectionReason,
   rejectionNotes,
+  withdrawalNotes,
+  sessionCount,
 }: {
   courseId: string;
   registrationId: string;
   status: Status;
   rejectionReason: (typeof REASON_OPTIONS)[number]["value"] | null;
   rejectionNotes: string | null;
+  withdrawalNotes: string | null;
+  sessionCount: number;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [reason, setReason] = useState(rejectionReason ?? "course_full");
-  const [state, formAction, isRejecting] = useActionState(
+
+  const [rejectState, rejectAction, isRejecting] = useActionState(
     rejectRegistration.bind(null, courseId, registrationId),
+    undefined,
+  );
+  const [withdrawState, withdrawAction, isWithdrawing] = useActionState(
+    withdrawRegistration.bind(null, courseId, registrationId),
     undefined,
   );
 
   const [wasRejecting, setWasRejecting] = useState(false);
   if (wasRejecting !== isRejecting) {
-    if (wasRejecting && !isRejecting && !state?.error) {
-      setOpen(false);
+    if (wasRejecting && !isRejecting && !rejectState?.error) {
+      setRejectOpen(false);
     }
     setWasRejecting(isRejecting);
   }
 
-  return (
-    <div className="flex items-center gap-1.5">
-      {status !== "accepted" && (
+  const [wasWithdrawing, setWasWithdrawing] = useState(false);
+  if (wasWithdrawing !== isWithdrawing) {
+    if (wasWithdrawing && !isWithdrawing && !withdrawState?.error) {
+      setWithdrawOpen(false);
+    }
+    setWasWithdrawing(isWithdrawing);
+  }
+
+  if (status === "pending") {
+    return (
+      <div className="flex items-center gap-1.5">
         <Button
           type="button"
           size="sm"
@@ -76,9 +98,7 @@ export function RegistrationActions({
         >
           Accept
         </Button>
-      )}
-      {status !== "rejected" && (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogTrigger
             render={
               <Button type="button" size="sm" variant="outline">
@@ -90,7 +110,7 @@ export function RegistrationActions({
             <DialogHeader>
               <DialogTitle>Reject registration</DialogTitle>
             </DialogHeader>
-            <form action={formAction} className="flex flex-col gap-4">
+            <form action={rejectAction} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label>Reason</Label>
                 {REASON_OPTIONS.map((opt) => (
@@ -121,8 +141,10 @@ export function RegistrationActions({
                   />
                 </div>
               )}
-              {state?.error && (
-                <p className="text-sm text-destructive">{state.error}</p>
+              {rejectState?.error && (
+                <p className="text-sm text-destructive">
+                  {rejectState.error}
+                </p>
               )}
               <Button
                 type="submit"
@@ -134,22 +156,82 @@ export function RegistrationActions({
             </form>
           </DialogContent>
         </Dialog>
-      )}
-      {status !== "pending" && (
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={isPending}
-          onClick={() =>
-            startTransition(() =>
-              resetRegistrationToPending(courseId, registrationId),
-            )
+      </div>
+    );
+  }
+
+  if (status === "accepted") {
+    return (
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogTrigger
+          render={
+            <Button type="button" size="sm" variant="outline">
+              Withdraw
+            </Button>
           }
-        >
-          Reset
-        </Button>
-      )}
-    </div>
+        />
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Withdraw student</DialogTitle>
+          </DialogHeader>
+          <form action={withdrawAction} className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              {sessionCount > 0
+                ? `This will remove them from ${sessionCount} session${sessionCount === 1 ? "" : "s"} on the timetable.`
+                : "They aren't currently assigned to any sessions."}
+            </p>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                defaultValue={withdrawalNotes ?? ""}
+                placeholder="e.g. Illness, changed plans…"
+              />
+            </div>
+            {withdrawState?.error && (
+              <p className="text-sm text-destructive">
+                {withdrawState.error}
+              </p>
+            )}
+            <Button type="submit" variant="destructive" disabled={isWithdrawing}>
+              {isWithdrawing ? "Withdrawing…" : "Confirm withdrawal"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (status === "rejected") {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(() =>
+            resetRegistrationToPending(courseId, registrationId),
+          )
+        }
+      >
+        Reset to pending
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      disabled={isPending}
+      onClick={() =>
+        startTransition(() => restoreRegistration(courseId, registrationId))
+      }
+    >
+      Restore to accepted
+    </Button>
   );
 }

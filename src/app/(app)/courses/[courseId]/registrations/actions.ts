@@ -1,10 +1,17 @@
 "use server";
 
 import { z } from "zod";
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { courseRegistrations, people } from "@/db/schema";
+import {
+  courseRegistrations,
+  people,
+  sessions,
+  sessionParticipants,
+  timeSlots,
+  courseDays,
+} from "@/db/schema";
 import { requireOrganiserOrAdmin } from "@/lib/auth-helpers";
 import { requireCourseOpen } from "@/lib/course-status";
 
@@ -80,6 +87,110 @@ export async function rejectRegistration(
   revalidatePath(`/courses/${courseId}/registrations`);
   revalidatePath(`/courses/${courseId}/timetable`);
   return undefined;
+}
+
+const withdrawSchema = z.object({
+  notes: z.string().optional(),
+});
+
+// Withdrawing removes the student from every session they're already
+// scheduled into for this course — unlike rejection, an accepted student
+// may already be on teachers' printed registers, so leaving stale
+// assignments in place is a real problem, not just a UI wrinkle.
+export async function withdrawRegistration(
+  courseId: string,
+  registrationId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
+
+  const parsed = withdrawSchema.safeParse({
+    notes: formData.get("notes") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const [registration] = await db
+    .select({ personId: courseRegistrations.personId })
+    .from(courseRegistrations)
+    .where(eq(courseRegistrations.id, registrationId))
+    .limit(1);
+  if (!registration) {
+    return { error: "Registration not found." };
+  }
+
+  const courseSessionIds = db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .innerJoin(timeSlots, eq(sessions.timeSlotId, timeSlots.id))
+    .innerJoin(courseDays, eq(timeSlots.courseDayId, courseDays.id))
+    .where(eq(courseDays.courseId, courseId));
+
+  await db
+    .delete(sessionParticipants)
+    .where(
+      and(
+        eq(sessionParticipants.personId, registration.personId),
+        inArray(sessionParticipants.sessionId, courseSessionIds),
+      ),
+    );
+
+  await db
+    .update(courseRegistrations)
+    .set({
+      status: "withdrawn",
+      withdrawalNotes: parsed.data.notes?.trim() || null,
+      rejectionReason: null,
+      rejectionNotes: null,
+    })
+    .where(eq(courseRegistrations.id, registrationId));
+
+  revalidatePath(`/courses/${courseId}/registrations`);
+  revalidatePath(`/courses/${courseId}/timetable`);
+  return undefined;
+}
+
+export async function restoreRegistration(
+  courseId: string,
+  registrationId: string,
+) {
+  await requireOrganiserOrAdmin();
+  await requireCourseOpen(courseId);
+  await db
+    .update(courseRegistrations)
+    .set({ status: "accepted", withdrawalNotes: null })
+    .where(eq(courseRegistrations.id, registrationId));
+  revalidatePath(`/courses/${courseId}/registrations`);
+  revalidatePath(`/courses/${courseId}/timetable`);
+}
+
+// Sessions currently assigned per person for this course, so the
+// Withdraw dialog can warn how many placements it's about to clear.
+export async function getSessionCounts(
+  courseId: string,
+): Promise<Record<string, number>> {
+  await requireOrganiserOrAdmin();
+
+  const rows = await db
+    .select({
+      personId: sessionParticipants.personId,
+      count: sql<number>`count(${sessionParticipants.sessionId})`.mapWith(
+        Number,
+      ),
+    })
+    .from(sessionParticipants)
+    .innerJoin(sessions, eq(sessionParticipants.sessionId, sessions.id))
+    .innerJoin(timeSlots, eq(sessions.timeSlotId, timeSlots.id))
+    .innerJoin(courseDays, eq(timeSlots.courseDayId, courseDays.id))
+    .where(eq(courseDays.courseId, courseId))
+    .groupBy(sessionParticipants.personId);
+
+  const counts: Record<string, number> = {};
+  for (const row of rows) counts[row.personId] = row.count;
+  return counts;
 }
 
 export async function getUnregisteredPeople(courseId: string) {

@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUnregisteredPeople } from "./actions";
+import { getSessionCounts, getUnregisteredPeople } from "./actions";
 import { AddRegistrationForm } from "./add-registration-form";
 import {
   RegistrationActions,
@@ -52,6 +52,7 @@ export default async function CourseRegistrationsPage({
       status: courseRegistrations.status,
       rejectionReason: courseRegistrations.rejectionReason,
       rejectionNotes: courseRegistrations.rejectionNotes,
+      withdrawalNotes: courseRegistrations.withdrawalNotes,
       createdAt: courseRegistrations.createdAt,
       personId: people.id,
       name: people.name,
@@ -64,6 +65,7 @@ export default async function CourseRegistrationsPage({
     .orderBy(desc(courseRegistrations.createdAt));
 
   const unregisteredPeople = await getUnregisteredPeople(courseId);
+  const sessionCounts = await getSessionCounts(courseId);
   const closed = isCourseClosed(course);
 
   const personIds = registrations.map((r) => r.personId);
@@ -152,6 +154,11 @@ export default async function CourseRegistrationsPage({
                           `: ${r.rejectionNotes}`}
                       </span>
                     )}
+                    {r.status === "withdrawn" && r.withdrawalNotes && (
+                      <span className="text-xs text-muted-foreground">
+                        {r.withdrawalNotes}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="whitespace-normal">
@@ -166,6 +173,8 @@ export default async function CourseRegistrationsPage({
                       status={r.status}
                       rejectionReason={r.rejectionReason}
                       rejectionNotes={r.rejectionNotes}
+                      withdrawalNotes={r.withdrawalNotes}
+                      sessionCount={sessionCounts[r.personId] ?? 0}
                     />
                   )}
                 </TableCell>
