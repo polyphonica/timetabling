@@ -30,13 +30,13 @@ export default async function AppLayout({
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3 print:hidden">
         <nav className="flex items-center gap-4">
-          <Link href="/" className="font-semibold">
+          <Link href="/" className="font-heading text-lg font-semibold text-primary">
             Higham Hall
           </Link>
           {activeCourse && (
             <Link
               href={`/courses/${activeCourse.id}/timetable`}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm text-muted-foreground hover:text-primary"
             >
               Timetable
             </Link>
@@ -46,7 +46,7 @@ export default async function AppLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-primary"
               >
                 {item.label}
               </Link>
