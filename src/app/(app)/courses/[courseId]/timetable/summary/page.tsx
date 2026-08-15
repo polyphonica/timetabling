@@ -95,7 +95,7 @@ export default async function TimetableSummaryPage({
                 const isBreak = timeSlot.kind === "break";
                 return (
                   <tr key={key} className={isBreak ? "bg-gray-50" : ""}>
-                    <td className="border border-gray-300 px-2 py-1 whitespace-nowrap text-gray-500">
+                    <td className="border border-gray-300 px-2 py-1 whitespace-nowrap text-gray-600">
                       {timeSlot.startTime.slice(0, 5)}–
                       {timeSlot.endTime.slice(0, 5)}
                     </td>
@@ -117,7 +117,7 @@ export default async function TimetableSummaryPage({
                         return (
                           <td
                             key={day.id}
-                            className="border border-gray-300 px-2 py-1 text-center text-gray-400 italic"
+                            className="border border-gray-300 px-2 py-1 text-center text-gray-500 italic"
                           >
                             {slot.label ?? "Break"}
                           </td>
