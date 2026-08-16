@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import {
   documents,
-  sessionDocuments,
+  sessionPieces,
   sessions,
   timeSlots,
   courseDays,
@@ -25,7 +25,8 @@ export default async function DocumentsPage() {
       fileSize: documents.fileSize,
       uploadedByName: people.name,
       createdAt: documents.createdAt,
-      sessionDocumentId: sessionDocuments.id,
+      pieceId: sessionPieces.id,
+      pieceTitle: sessionPieces.title,
       sessionId: sessions.id,
       sessionTitle: sessions.title,
       courseName: courses.name,
@@ -34,8 +35,8 @@ export default async function DocumentsPage() {
     })
     .from(documents)
     .leftJoin(people, eq(documents.uploadedByPersonId, people.id))
-    .leftJoin(sessionDocuments, eq(sessionDocuments.documentId, documents.id))
-    .leftJoin(sessions, eq(sessionDocuments.sessionId, sessions.id))
+    .leftJoin(sessionPieces, eq(sessionPieces.documentId, documents.id))
+    .leftJoin(sessions, eq(sessionPieces.sessionId, sessions.id))
     .leftJoin(timeSlots, eq(sessions.timeSlotId, timeSlots.id))
     .leftJoin(courseDays, eq(timeSlots.courseDayId, courseDays.id))
     .leftJoin(courses, eq(courseDays.courseId, courses.id))
@@ -51,7 +52,8 @@ export default async function DocumentsPage() {
       uploadedByName: string | null;
       createdAt: Date;
       attachments: {
-        sessionDocumentId: string;
+        pieceId: string;
+        pieceTitle: string;
         sessionId: string;
         sessionTitle: string;
         courseName: string;
@@ -73,9 +75,10 @@ export default async function DocumentsPage() {
       };
       byDocument.set(row.documentId, entry);
     }
-    if (row.sessionDocumentId && row.sessionId && row.courseName) {
+    if (row.pieceId && row.sessionId && row.courseName) {
       entry.attachments.push({
-        sessionDocumentId: row.sessionDocumentId,
+        pieceId: row.pieceId,
+        pieceTitle: row.pieceTitle!,
         sessionId: row.sessionId,
         sessionTitle: row.sessionTitle!,
         courseName: row.courseName,
@@ -90,8 +93,8 @@ export default async function DocumentsPage() {
       <div>
         <h1 className="text-xl font-semibold">Documents</h1>
         <p className="text-sm text-muted-foreground">
-          Sheet music and other files uploaded against timetable sessions,
-          searchable across every course.
+          Sheet music and other files uploaded against timetable session
+          pieces, searchable across every course.
         </p>
       </div>
       <DocumentsTable

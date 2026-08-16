@@ -15,7 +15,8 @@ import { DeleteButton } from "@/components/delete-button";
 import { CopyLinkButton } from "./copy-link-button";
 
 type Attachment = {
-  sessionDocumentId: string;
+  pieceId: string;
+  pieceTitle: string;
   sessionId: string;
   sessionTitle: string;
   courseName: string;
@@ -55,7 +56,8 @@ export function DocumentsTable({
     return doc.attachments.some(
       (a) =>
         a.courseName.toLowerCase().includes(needle) ||
-        a.sessionTitle.toLowerCase().includes(needle),
+        a.sessionTitle.toLowerCase().includes(needle) ||
+        a.pieceTitle.toLowerCase().includes(needle),
     );
   });
 
@@ -89,13 +91,14 @@ export function DocumentsTable({
                 <TableCell className="whitespace-normal">
                   {doc.attachments.length === 0 ? (
                     <span className="text-muted-foreground">
-                      Not attached to any session
+                      Not attached to any piece
                     </span>
                   ) : (
                     <ul className="flex flex-col gap-0.5">
                       {doc.attachments.map((a) => (
-                        <li key={a.sessionDocumentId}>
-                          {a.courseName} — {format(new Date(a.dayDate), "d MMM")}{" "}
+                        <li key={a.pieceId}>
+                          {a.pieceTitle} — {a.courseName},{" "}
+                          {format(new Date(a.dayDate), "d MMM")}{" "}
                           {a.startTime.slice(0, 5)} · {a.sessionTitle}
                         </li>
                       ))}
@@ -121,7 +124,7 @@ export function DocumentsTable({
                         label="Delete"
                         confirmMessage={
                           doc.attachments.length > 0
-                            ? `Delete "${doc.filename}" permanently? It's attached to ${doc.attachments.length} session(s) — this removes their access and cannot be undone.`
+                            ? `Delete "${doc.filename}" permanently? It's attached to ${doc.attachments.length} piece(s) — this removes their access and cannot be undone.`
                             : `Delete "${doc.filename}" permanently? This cannot be undone.`
                         }
                       />

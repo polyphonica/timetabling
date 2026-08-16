@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -11,7 +11,6 @@ import {
   sessionTeachers,
   sessionParticipants,
   sessionPieces,
-  sessionDocuments,
   documents,
   people,
   skills,
@@ -21,12 +20,11 @@ import { DeleteButton } from "@/components/delete-button";
 import { PrintButton } from "@/components/print-button";
 import { AddPieceForm } from "./add-piece-form";
 import { InstrumentSelector } from "./instrument-selector";
-import { UploadDocumentForm } from "./upload-document-form";
-import { AttachExistingDocument } from "./attach-existing-document";
+import { AttachPieceDocument } from "./attach-piece-document";
 import {
   setParticipantInstrument,
   deletePiece,
-  unattachDocument,
+  detachDocumentFromPiece,
 } from "./actions";
 
 export default async function SessionDetailPage({
@@ -61,8 +59,8 @@ export default async function SessionDetailPage({
 
   if (!sessionRow) notFound();
 
-  // Fetch teachers, participants, pieces, documents in parallel
-  const [teacherRows, participantRows, pieces, attachedDocuments] = await Promise.all([
+  // Fetch teachers, participants, pieces (with any attached document) in parallel
+  const [teacherRows, participantRows, pieces] = await Promise.all([
     db
       .select({ id: people.id, name: people.name })
       .from(sessionTeachers)
@@ -82,29 +80,23 @@ export default async function SessionDetailPage({
       .where(eq(sessionParticipants.sessionId, sessionId))
       .orderBy(people.name),
     db
-      .select()
+      .select({
+        id: sessionPieces.id,
+        title: sessionPieces.title,
+        createdAt: sessionPieces.createdAt,
+        documentId: documents.id,
+        documentFilename: documents.filename,
+      })
       .from(sessionPieces)
+      .leftJoin(documents, eq(sessionPieces.documentId, documents.id))
       .where(eq(sessionPieces.sessionId, sessionId))
       .orderBy(asc(sessionPieces.createdAt)),
-    db
-      .select({
-        sessionDocumentId: sessionDocuments.id,
-        documentId: documents.id,
-        filename: documents.filename,
-      })
-      .from(sessionDocuments)
-      .innerJoin(documents, eq(sessionDocuments.documentId, documents.id))
-      .where(eq(sessionDocuments.sessionId, sessionId))
-      .orderBy(asc(sessionDocuments.createdAt)),
   ]);
 
-  const attachedDocumentIds = attachedDocuments.map((d) => d.documentId);
-  const allDocuments = await db
+  const availableDocuments = await db
     .select({ id: documents.id, filename: documents.filename })
     .from(documents)
     .orderBy(desc(documents.createdAt));
-  const attachedIdSet = new Set(attachedDocumentIds);
-  const availableDocuments = allDocuments.filter((d) => !attachedIdSet.has(d.id));
 
   // Available skills per participant
   const participantIds = participantRows.map((p) => p.id);
@@ -219,22 +211,56 @@ export default async function SessionDetailPage({
           <p className="text-sm text-muted-foreground">No pieces added yet.</p>
         )}
         {pieces.length > 0 && (
-          <ul className="mb-3 flex flex-col gap-1">
+          <ul className="mb-3 flex flex-col gap-2">
             {pieces.map((piece) => (
-              <li
-                key={piece.id}
-                className="flex items-center justify-between gap-2"
-              >
-                <span className="text-sm">
-                  <span className="mr-2 text-muted-foreground">&bull;</span>
-                  {piece.title}
-                </span>
-                {canEdit && (
-                  <span className="print:hidden">
-                    <DeleteButton
-                      action={deletePiece.bind(null, courseId, piece.id)}
-                    />
+              <li key={piece.id} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm">
+                    <span className="mr-2 text-muted-foreground">&bull;</span>
+                    {piece.title}
                   </span>
+                  {canEdit && (
+                    <span className="print:hidden">
+                      <DeleteButton
+                        action={deletePiece.bind(null, courseId, piece.id)}
+                      />
+                    </span>
+                  )}
+                </div>
+                {piece.documentId ? (
+                  <div className="ml-4 flex items-center justify-between gap-2">
+                    <a
+                      href={`/documents/${piece.documentId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm underline"
+                    >
+                      {piece.documentFilename}
+                    </a>
+                    {canEdit && (
+                      <span className="print:hidden">
+                        <DeleteButton
+                          action={detachDocumentFromPiece.bind(
+                            null,
+                            courseId,
+                            piece.id,
+                          )}
+                          label="Remove file"
+                          confirmMessage="Remove this file from this piece? It stays available in the document library."
+                        />
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  canEdit && (
+                    <div className="ml-4 print:hidden">
+                      <AttachPieceDocument
+                        courseId={courseId}
+                        pieceId={piece.id}
+                        availableDocuments={availableDocuments}
+                      />
+                    </div>
+                  )
                 )}
               </li>
             ))}
@@ -243,57 +269,6 @@ export default async function SessionDetailPage({
         {canEdit && (
           <div className="print:hidden">
             <AddPieceForm courseId={courseId} sessionId={sessionId} />
-          </div>
-        )}
-      </section>
-
-      {/* Documents */}
-      <section className="print:hidden">
-        <h2 className="mb-3 font-medium">Documents</h2>
-        {attachedDocuments.length === 0 && !canEdit && (
-          <p className="text-sm text-muted-foreground">
-            No documents added yet.
-          </p>
-        )}
-        {attachedDocuments.length > 0 && (
-          <ul className="mb-3 flex flex-col gap-1">
-            {attachedDocuments.map((doc) => (
-              <li
-                key={doc.sessionDocumentId}
-                className="flex items-center justify-between gap-2"
-              >
-                <a
-                  href={`/documents/${doc.documentId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm underline"
-                >
-                  {doc.filename}
-                </a>
-                {canEdit && (
-                  <DeleteButton
-                    action={unattachDocument.bind(
-                      null,
-                      courseId,
-                      sessionId,
-                      doc.sessionDocumentId,
-                    )}
-                    label="Remove"
-                    confirmMessage="Remove this document from this session? It stays available in the document library and on any other session it's attached to."
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {canEdit && (
-          <div className="flex flex-col gap-3">
-            <UploadDocumentForm courseId={courseId} sessionId={sessionId} />
-            <AttachExistingDocument
-              courseId={courseId}
-              sessionId={sessionId}
-              availableDocuments={availableDocuments}
-            />
           </div>
         )}
       </section>

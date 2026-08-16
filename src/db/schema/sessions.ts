@@ -1,6 +1,7 @@
 import { pgTable, uuid, text, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { timeSlots, rooms } from "./courses";
 import { people, skillTypes } from "./people";
+import { documents } from "./documents";
 
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -46,6 +47,9 @@ export const sessionPieces = pgTable("session_pieces", {
     .notNull()
     .references(() => sessions.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  documentId: uuid("document_id").references(() => documents.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

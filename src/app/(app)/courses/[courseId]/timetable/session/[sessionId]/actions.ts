@@ -6,12 +6,7 @@ import path from "path";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import {
-  sessionParticipants,
-  sessionPieces,
-  documents,
-  sessionDocuments,
-} from "@/db/schema";
+import { sessionParticipants, sessionPieces, documents } from "@/db/schema";
 import { requireSessionEditAccess } from "@/lib/auth-helpers";
 import { requireCourseOpen } from "@/lib/course-status";
 import { UPLOADS_DIR } from "@/lib/uploads";
@@ -70,6 +65,15 @@ async function storeDocument(
   return { documentId: row.id };
 }
 
+async function pieceSessionId(pieceId: string): Promise<string | null> {
+  const [piece] = await db
+    .select({ sessionId: sessionPieces.sessionId })
+    .from(sessionPieces)
+    .where(eq(sessionPieces.id, pieceId))
+    .limit(1);
+  return piece?.sessionId ?? null;
+}
+
 export async function setParticipantInstrument(
   courseId: string,
   sessionId: string,
@@ -98,40 +102,44 @@ export async function addPiece(
   _prevState: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string } | undefined> {
-  await requireSessionEditAccess(sessionId);
+  const authSession = await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
   const title = (formData.get("title") as string | null)?.trim();
   if (!title) return { error: "Title is required." };
 
-  await db.insert(sessionPieces).values({ sessionId, title });
+  let documentId: string | null = null;
+  const file = formData.get("file");
+  if (file instanceof File && file.size > 0) {
+    const result = await storeDocument(file, authSession.user.personId);
+    if ("error" in result) return { error: result.error };
+    documentId = result.documentId;
+  }
+
+  await db.insert(sessionPieces).values({ sessionId, title, documentId });
   revalidatePath(
     `/courses/${courseId}/timetable/session/${sessionId}`,
   );
 }
 
 export async function deletePiece(courseId: string, pieceId: string) {
-  // Fetch the piece to get its sessionId for the auth check
-  const [piece] = await db
-    .select({ sessionId: sessionPieces.sessionId })
-    .from(sessionPieces)
-    .where(eq(sessionPieces.id, pieceId))
-    .limit(1);
-  if (!piece) return;
+  const sessionId = await pieceSessionId(pieceId);
+  if (!sessionId) return;
 
-  await requireSessionEditAccess(piece.sessionId);
+  await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
   await db.delete(sessionPieces).where(eq(sessionPieces.id, pieceId));
-  revalidatePath(
-    `/courses/${courseId}/timetable/session/${piece.sessionId}`,
-  );
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
 }
 
-export async function uploadDocument(
+export async function uploadDocumentForPiece(
   courseId: string,
-  sessionId: string,
+  pieceId: string,
   _prevState: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string } | undefined> {
+  const sessionId = await pieceSessionId(pieceId);
+  if (!sessionId) return { error: "Piece not found." };
+
   const authSession = await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
 
@@ -144,57 +152,46 @@ export async function uploadDocument(
   if ("error" in result) return { error: result.error };
 
   await db
-    .insert(sessionDocuments)
-    .values({
-      sessionId,
-      documentId: result.documentId,
-      attachedByPersonId: authSession.user.personId,
-    })
-    .onConflictDoNothing({
-      target: [sessionDocuments.sessionId, sessionDocuments.documentId],
-    });
+    .update(sessionPieces)
+    .set({ documentId: result.documentId })
+    .where(eq(sessionPieces.id, pieceId));
 
   revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
 }
 
-export async function attachExistingDocument(
+export async function attachExistingDocumentToPiece(
   courseId: string,
-  sessionId: string,
+  pieceId: string,
   documentId: string,
 ) {
-  const authSession = await requireSessionEditAccess(sessionId);
-  await requireCourseOpen(courseId);
+  const sessionId = await pieceSessionId(pieceId);
+  if (!sessionId) return;
 
-  await db
-    .insert(sessionDocuments)
-    .values({
-      sessionId,
-      documentId,
-      attachedByPersonId: authSession.user.personId,
-    })
-    .onConflictDoNothing({
-      target: [sessionDocuments.sessionId, sessionDocuments.documentId],
-    });
-
-  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
-}
-
-export async function unattachDocument(
-  courseId: string,
-  sessionId: string,
-  sessionDocumentId: string,
-) {
   await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
 
   await db
-    .delete(sessionDocuments)
-    .where(
-      and(
-        eq(sessionDocuments.id, sessionDocumentId),
-        eq(sessionDocuments.sessionId, sessionId),
-      ),
-    );
+    .update(sessionPieces)
+    .set({ documentId })
+    .where(eq(sessionPieces.id, pieceId));
+
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
+}
+
+export async function detachDocumentFromPiece(
+  courseId: string,
+  pieceId: string,
+) {
+  const sessionId = await pieceSessionId(pieceId);
+  if (!sessionId) return;
+
+  await requireSessionEditAccess(sessionId);
+  await requireCourseOpen(courseId);
+
+  await db
+    .update(sessionPieces)
+    .set({ documentId: null })
+    .where(eq(sessionPieces.id, pieceId));
 
   revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
 }

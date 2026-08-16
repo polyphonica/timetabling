@@ -29,7 +29,7 @@ export function AddPieceForm({
     <form
       ref={formRef}
       action={formAction}
-      className="flex items-center gap-2"
+      className="flex flex-wrap items-center gap-2"
     >
       <Input
         name="title"
@@ -37,11 +37,17 @@ export function AddPieceForm({
         required
         className="flex-1"
       />
+      <input
+        type="file"
+        name="file"
+        accept="application/pdf"
+        className="text-sm"
+      />
       <Button type="submit" size="sm" disabled={isPending}>
         {isPending ? "Adding…" : "Add piece"}
       </Button>
       {state?.error && (
-        <p className="text-sm text-destructive">{state.error}</p>
+        <p className="w-full text-sm text-destructive">{state.error}</p>
       )}
     </form>
   );
