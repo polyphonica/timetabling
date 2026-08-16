@@ -64,6 +64,13 @@
       "when": 1786771048661,
       "tag": "0008_bent_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786856166477,
+      "tag": "0009_registration_interests",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,8 @@ import {
   people,
   skills,
   skillTypes,
+  registrationInterests,
+  interestTypes,
 } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { isCourseClosed } from "@/lib/course-status";
@@ -87,6 +89,30 @@ export default async function CourseRegistrationsPage({
     skillsByPerson.get(s.personId)!.push(s.skillTypeName);
   }
 
+  const registrationIds = registrations.map((r) => r.registrationId);
+  const declaredInterests =
+    registrationIds.length > 0
+      ? await db
+          .select({
+            registrationId: registrationInterests.courseRegistrationId,
+            interestTypeName: interestTypes.name,
+          })
+          .from(registrationInterests)
+          .innerJoin(
+            interestTypes,
+            eq(registrationInterests.interestTypeId, interestTypes.id),
+          )
+          .where(inArray(registrationInterests.courseRegistrationId, registrationIds))
+      : [];
+
+  const interestsByRegistration = new Map<string, string[]>();
+  for (const i of declaredInterests) {
+    if (!interestsByRegistration.has(i.registrationId)) {
+      interestsByRegistration.set(i.registrationId, []);
+    }
+    interestsByRegistration.get(i.registrationId)!.push(i.interestTypeName);
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
       <div>
@@ -121,6 +147,7 @@ export default async function CourseRegistrationsPage({
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Instruments</TableHead>
+              <TableHead>Interests</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Notes</TableHead>
               <TableHead>Submitted</TableHead>
@@ -142,6 +169,11 @@ export default async function CourseRegistrationsPage({
                 <TableCell>{r.phone}</TableCell>
                 <TableCell className="whitespace-normal">
                   {(skillsByPerson.get(r.personId) ?? []).join(", ")}
+                </TableCell>
+                <TableCell className="whitespace-normal">
+                  {(interestsByRegistration.get(r.registrationId) ?? []).join(
+                    ", ",
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">

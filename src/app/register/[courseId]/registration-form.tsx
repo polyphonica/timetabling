@@ -7,14 +7,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { registerStudent } from "./actions";
 
-type SkillType = { id: string; name: string; group: string | null };
+type NamedGroupedType = { id: string; name: string; group: string | null };
+
+function groupByGroup(types: NamedGroupedType[]) {
+  const groups = new Map<string, NamedGroupedType[]>();
+  for (const type of types) {
+    const key = type.group ?? "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(type);
+  }
+  return groups;
+}
 
 export function RegistrationForm({
   courseId,
   skillTypes,
+  interestTypes,
 }: {
   courseId: string;
-  skillTypes: SkillType[];
+  skillTypes: NamedGroupedType[];
+  interestTypes: NamedGroupedType[];
 }) {
   const registerForCourse = registerStudent.bind(null, courseId);
   const [state, formAction, isPending] = useActionState(
@@ -31,12 +43,8 @@ export function RegistrationForm({
     );
   }
 
-  const groups = new Map<string, SkillType[]>();
-  for (const type of skillTypes) {
-    const key = type.group ?? "Other";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(type);
-  }
+  const groups = groupByGroup(skillTypes);
+  const interestGroups = groupByGroup(interestTypes);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -79,6 +87,39 @@ export function RegistrationForm({
           </div>
         ))}
       </div>
+
+      {interestTypes.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Label>What would you like to be involved in?</Label>
+          <p className="text-sm text-muted-foreground">
+            Select any activities or ensembles you&apos;re interested in —
+            this helps the organiser place you in sessions.
+          </p>
+          {[...interestGroups.entries()].map(([group, types]) => (
+            <div key={group} className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-muted-foreground">
+                {group}
+              </span>
+              <div className="flex flex-col gap-1.5 pl-1">
+                {types.map((type) => (
+                  <label
+                    key={type.id}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      name="interestTypeIds"
+                      value={type.id}
+                      className="size-4"
+                    />
+                    {type.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="notes">Notes (optional)</Label>

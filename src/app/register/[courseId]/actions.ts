@@ -3,7 +3,12 @@
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { people, skills, courseRegistrations } from "@/db/schema";
+import {
+  people,
+  skills,
+  courseRegistrations,
+  registrationInterests,
+} from "@/db/schema";
 import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string; success?: boolean } | undefined;
@@ -13,6 +18,7 @@ const registrationSchema = z.object({
   email: z.string().email("Enter a valid email address"),
   phone: z.string().min(1, "Phone number is required"),
   skillTypeIds: z.array(z.string()).min(1, "Select at least one instrument"),
+  interestTypeIds: z.array(z.string()).optional(),
   notes: z.string().optional(),
 });
 
@@ -37,12 +43,13 @@ export async function registerStudent(
     email: formData.get("email"),
     phone: formData.get("phone"),
     skillTypeIds: formData.getAll("skillTypeIds"),
+    interestTypeIds: formData.getAll("interestTypeIds"),
     notes: formData.get("notes") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
-  const { name, email, phone, skillTypeIds, notes } = parsed.data;
+  const { name, email, phone, skillTypeIds, interestTypeIds, notes } = parsed.data;
 
   const [existingPerson] = await db
     .select()
@@ -100,11 +107,23 @@ export async function registerStudent(
       .values(skillTypeIds.map((skillTypeId) => ({ personId, skillTypeId })));
   }
 
-  await db.insert(courseRegistrations).values({
-    courseId,
-    personId,
-    notes: notes || null,
-  });
+  const [registration] = await db
+    .insert(courseRegistrations)
+    .values({
+      courseId,
+      personId,
+      notes: notes || null,
+    })
+    .returning({ id: courseRegistrations.id });
+
+  if (interestTypeIds && interestTypeIds.length > 0) {
+    await db.insert(registrationInterests).values(
+      interestTypeIds.map((interestTypeId) => ({
+        courseRegistrationId: registration.id,
+        interestTypeId,
+      })),
+    );
+  }
 
   return { success: true };
 }

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { db } from "@/db";
-import { courses, skillTypes } from "@/db/schema";
+import { courses, skillTypes, interestTypes } from "@/db/schema";
 import { isCourseClosed } from "@/lib/course-status";
 import { RegistrationForm } from "./registration-form";
 
@@ -23,10 +23,16 @@ export default async function RegisterPage({
     notFound();
   }
 
-  const types = await db
-    .select()
-    .from(skillTypes)
-    .orderBy(skillTypes.group, skillTypes.sortOrder, skillTypes.name);
+  const [types, interests] = await Promise.all([
+    db
+      .select()
+      .from(skillTypes)
+      .orderBy(skillTypes.group, skillTypes.sortOrder, skillTypes.name),
+    db
+      .select()
+      .from(interestTypes)
+      .orderBy(interestTypes.group, interestTypes.sortOrder, interestTypes.name),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-6 p-8">
@@ -49,7 +55,11 @@ export default async function RegisterPage({
       </div>
 
       {!isCourseClosed(course) && (
-        <RegistrationForm courseId={courseId} skillTypes={types} />
+        <RegistrationForm
+          courseId={courseId}
+          skillTypes={types}
+          interestTypes={interests}
+        />
       )}
     </div>
   );
