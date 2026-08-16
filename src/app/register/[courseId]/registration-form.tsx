@@ -95,6 +95,10 @@ export function RegistrationForm({
             Select any activities or ensembles you&apos;re interested in —
             this helps the organiser place you in sessions.
           </p>
+          <p className="text-sm text-muted-foreground italic">
+            Every effort is made to accommodate your wishes, but not all
+            choices are possible.
+          </p>
           {[...interestGroups.entries()].map(([group, types]) => (
             <div key={group} className="flex flex-col gap-1">
               <span className="text-sm font-medium text-muted-foreground">
