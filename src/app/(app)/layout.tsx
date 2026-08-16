@@ -28,6 +28,7 @@ export default async function AppLayout({
         <nav className="flex items-center gap-4">
           <Link
             href={BRAND_HREF}
+            title="Tywyn Technologies Timetabling"
             className="font-heading text-lg font-semibold text-primary"
           >
             TTT
