@@ -30,7 +30,7 @@ export function CreateCourseDialog() {
             <Input
               id="name"
               name="name"
-              placeholder="Higham Hall Early Music Course 2027"
+              placeholder="Summer Course 2027"
               required
             />
           </div>
@@ -46,7 +46,7 @@ export function CreateCourseDialog() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="venue">Venue</Label>
-            <Input id="venue" name="venue" placeholder="Higham Hall" />
+            <Input id="venue" name="venue" placeholder="Venue name" />
           </div>
           {state?.error && (
             <p className="text-sm text-destructive">{state.error}</p>

@@ -20,7 +20,7 @@ export default async function HomePage() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
         <h1 className="text-xl font-semibold">
-          Higham Hall Early Music Course
+          Tywyn Technologies Timetabling
         </h1>
         {activeCourse ? (
           <div className="flex flex-col items-center gap-2">

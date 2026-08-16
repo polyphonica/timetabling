@@ -4,10 +4,10 @@ import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex flex-1 items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Higham Hall Early Music Course</CardTitle>
+          <CardTitle>Tywyn Technologies Timetabling</CardTitle>
         </CardHeader>
         <CardContent>
           <Suspense>

@@ -9,6 +9,8 @@ const MANAGE_NAV_ITEMS = [
   { href: "/skill-types", label: "Skill Types" },
 ];
 
+const BRAND_HREF = "https://timetabling.recorder-ed.com/";
+
 export default async function AppLayout({
   children,
 }: {
@@ -21,11 +23,20 @@ export default async function AppLayout({
   const liveCourse = await getLiveCourse();
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3 print:hidden">
         <nav className="flex items-center gap-4">
-          <Link href="/" className="font-heading text-lg font-semibold text-primary">
-            Higham Hall
+          <Link
+            href={BRAND_HREF}
+            className="font-heading text-lg font-semibold text-primary"
+          >
+            TTT
+          </Link>
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-primary"
+          >
+            Home
           </Link>
           {liveCourse &&
             (canManage ? (
