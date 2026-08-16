@@ -8,6 +8,7 @@ const MANAGE_NAV_ITEMS = [
   { href: "/people", label: "People" },
   { href: "/skill-types", label: "Skill Types" },
   { href: "/interest-types", label: "Interests" },
+  { href: "/documents", label: "Documents" },
 ];
 
 const BRAND_HREF = "https://timetabling.recorder-ed.com/";

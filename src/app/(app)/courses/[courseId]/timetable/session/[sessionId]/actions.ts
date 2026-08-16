@@ -1,36 +1,73 @@
 "use server";
 
+import { randomUUID, createHash } from "crypto";
+import { writeFile } from "fs/promises";
+import path from "path";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
   sessionParticipants,
   sessionPieces,
-  sessionTeachers,
+  documents,
+  sessionDocuments,
 } from "@/db/schema";
-import { requireSession, requireOrganiserOrAdmin } from "@/lib/auth-helpers";
+import { requireSessionEditAccess } from "@/lib/auth-helpers";
 import { requireCourseOpen } from "@/lib/course-status";
+import { UPLOADS_DIR } from "@/lib/uploads";
 
-async function assertCanEdit(sessionId: string) {
-  const authSession = await requireSession();
-  const role = authSession.user.role;
-  if (role === "admin" || role === "organiser") return authSession;
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
-  // Check if the current user is an assigned teacher on this session
-  const personId = authSession.user.personId;
-  const [row] = await db
-    .select({ sessionId: sessionTeachers.sessionId })
-    .from(sessionTeachers)
-    .where(
-      and(
-        eq(sessionTeachers.sessionId, sessionId),
-        eq(sessionTeachers.personId, personId),
-      ),
-    )
+async function storeDocument(
+  file: File,
+  personId: string,
+): Promise<{ error: string } | { documentId: string }> {
+  if (file.type !== "application/pdf") {
+    return { error: "Only PDF files are accepted." };
+  }
+  if (file.size === 0 || file.size > MAX_FILE_SIZE) {
+    return { error: "File must be a PDF under 25MB." };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  if (buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
+    return { error: "File does not look like a valid PDF." };
+  }
+
+  const hash = createHash("sha256").update(buffer).digest("hex");
+
+  const [existing] = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(eq(documents.sha256Hash, hash))
     .limit(1);
+  if (existing) return { documentId: existing.id };
 
-  if (!row) throw new Error("Forbidden");
-  return authSession;
+  const id = randomUUID();
+  const storagePath = `${id}.pdf`;
+  await writeFile(path.join(UPLOADS_DIR, storagePath), buffer);
+
+  const [inserted] = await db
+    .insert(documents)
+    .values({
+      id,
+      filename: file.name,
+      storagePath,
+      fileSize: buffer.length,
+      sha256Hash: hash,
+      uploadedByPersonId: personId,
+    })
+    .onConflictDoNothing({ target: documents.sha256Hash })
+    .returning({ id: documents.id });
+  if (inserted) return { documentId: inserted.id };
+
+  // Lost the race to insert — someone else just uploaded the same file.
+  const [row] = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(eq(documents.sha256Hash, hash))
+    .limit(1);
+  return { documentId: row.id };
 }
 
 export async function setParticipantInstrument(
@@ -39,7 +76,7 @@ export async function setParticipantInstrument(
   personId: string,
   skillTypeId: string | null,
 ) {
-  await assertCanEdit(sessionId);
+  await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
   await db
     .update(sessionParticipants)
@@ -61,7 +98,7 @@ export async function addPiece(
   _prevState: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string } | undefined> {
-  await assertCanEdit(sessionId);
+  await requireSessionEditAccess(sessionId);
   await requireCourseOpen(courseId);
   const title = (formData.get("title") as string | null)?.trim();
   if (!title) return { error: "Title is required." };
@@ -81,10 +118,83 @@ export async function deletePiece(courseId: string, pieceId: string) {
     .limit(1);
   if (!piece) return;
 
-  await assertCanEdit(piece.sessionId);
+  await requireSessionEditAccess(piece.sessionId);
   await requireCourseOpen(courseId);
   await db.delete(sessionPieces).where(eq(sessionPieces.id, pieceId));
   revalidatePath(
     `/courses/${courseId}/timetable/session/${piece.sessionId}`,
   );
+}
+
+export async function uploadDocument(
+  courseId: string,
+  sessionId: string,
+  _prevState: { error?: string } | undefined,
+  formData: FormData,
+): Promise<{ error?: string } | undefined> {
+  const authSession = await requireSessionEditAccess(sessionId);
+  await requireCourseOpen(courseId);
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose a PDF file." };
+  }
+
+  const result = await storeDocument(file, authSession.user.personId);
+  if ("error" in result) return { error: result.error };
+
+  await db
+    .insert(sessionDocuments)
+    .values({
+      sessionId,
+      documentId: result.documentId,
+      attachedByPersonId: authSession.user.personId,
+    })
+    .onConflictDoNothing({
+      target: [sessionDocuments.sessionId, sessionDocuments.documentId],
+    });
+
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
+}
+
+export async function attachExistingDocument(
+  courseId: string,
+  sessionId: string,
+  documentId: string,
+) {
+  const authSession = await requireSessionEditAccess(sessionId);
+  await requireCourseOpen(courseId);
+
+  await db
+    .insert(sessionDocuments)
+    .values({
+      sessionId,
+      documentId,
+      attachedByPersonId: authSession.user.personId,
+    })
+    .onConflictDoNothing({
+      target: [sessionDocuments.sessionId, sessionDocuments.documentId],
+    });
+
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
+}
+
+export async function unattachDocument(
+  courseId: string,
+  sessionId: string,
+  sessionDocumentId: string,
+) {
+  await requireSessionEditAccess(sessionId);
+  await requireCourseOpen(courseId);
+
+  await db
+    .delete(sessionDocuments)
+    .where(
+      and(
+        eq(sessionDocuments.id, sessionDocumentId),
+        eq(sessionDocuments.sessionId, sessionId),
+      ),
+    );
+
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
 }

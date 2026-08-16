@@ -5,3 +5,4 @@ export * from "./messaging";
 export * from "./tasks";
 export * from "./registrations";
 export * from "./interests";
+export * from "./documents";

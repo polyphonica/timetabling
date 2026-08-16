@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -11,6 +11,8 @@ import {
   sessionTeachers,
   sessionParticipants,
   sessionPieces,
+  sessionDocuments,
+  documents,
   people,
   skills,
   skillTypes,
@@ -19,7 +21,13 @@ import { DeleteButton } from "@/components/delete-button";
 import { PrintButton } from "@/components/print-button";
 import { AddPieceForm } from "./add-piece-form";
 import { InstrumentSelector } from "./instrument-selector";
-import { setParticipantInstrument, deletePiece } from "./actions";
+import { UploadDocumentForm } from "./upload-document-form";
+import { AttachExistingDocument } from "./attach-existing-document";
+import {
+  setParticipantInstrument,
+  deletePiece,
+  unattachDocument,
+} from "./actions";
 
 export default async function SessionDetailPage({
   params,
@@ -53,8 +61,8 @@ export default async function SessionDetailPage({
 
   if (!sessionRow) notFound();
 
-  // Fetch teachers, participants, pieces in parallel
-  const [teacherRows, participantRows, pieces] = await Promise.all([
+  // Fetch teachers, participants, pieces, documents in parallel
+  const [teacherRows, participantRows, pieces, attachedDocuments] = await Promise.all([
     db
       .select({ id: people.id, name: people.name })
       .from(sessionTeachers)
@@ -78,7 +86,25 @@ export default async function SessionDetailPage({
       .from(sessionPieces)
       .where(eq(sessionPieces.sessionId, sessionId))
       .orderBy(asc(sessionPieces.createdAt)),
+    db
+      .select({
+        sessionDocumentId: sessionDocuments.id,
+        documentId: documents.id,
+        filename: documents.filename,
+      })
+      .from(sessionDocuments)
+      .innerJoin(documents, eq(sessionDocuments.documentId, documents.id))
+      .where(eq(sessionDocuments.sessionId, sessionId))
+      .orderBy(asc(sessionDocuments.createdAt)),
   ]);
+
+  const attachedDocumentIds = attachedDocuments.map((d) => d.documentId);
+  const allDocuments = await db
+    .select({ id: documents.id, filename: documents.filename })
+    .from(documents)
+    .orderBy(desc(documents.createdAt));
+  const attachedIdSet = new Set(attachedDocumentIds);
+  const availableDocuments = allDocuments.filter((d) => !attachedIdSet.has(d.id));
 
   // Available skills per participant
   const participantIds = participantRows.map((p) => p.id);
@@ -217,6 +243,57 @@ export default async function SessionDetailPage({
         {canEdit && (
           <div className="print:hidden">
             <AddPieceForm courseId={courseId} sessionId={sessionId} />
+          </div>
+        )}
+      </section>
+
+      {/* Documents */}
+      <section className="print:hidden">
+        <h2 className="mb-3 font-medium">Documents</h2>
+        {attachedDocuments.length === 0 && !canEdit && (
+          <p className="text-sm text-muted-foreground">
+            No documents added yet.
+          </p>
+        )}
+        {attachedDocuments.length > 0 && (
+          <ul className="mb-3 flex flex-col gap-1">
+            {attachedDocuments.map((doc) => (
+              <li
+                key={doc.sessionDocumentId}
+                className="flex items-center justify-between gap-2"
+              >
+                <a
+                  href={`/documents/${doc.documentId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline"
+                >
+                  {doc.filename}
+                </a>
+                {canEdit && (
+                  <DeleteButton
+                    action={unattachDocument.bind(
+                      null,
+                      courseId,
+                      sessionId,
+                      doc.sessionDocumentId,
+                    )}
+                    label="Remove"
+                    confirmMessage="Remove this document from this session? It stays available in the document library and on any other session it's attached to."
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {canEdit && (
+          <div className="flex flex-col gap-3">
+            <UploadDocumentForm courseId={courseId} sessionId={sessionId} />
+            <AttachExistingDocument
+              courseId={courseId}
+              sessionId={sessionId}
+              availableDocuments={availableDocuments}
+            />
           </div>
         )}
       </section>

@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# local dev upload storage (see UPLOADS_DIR in .env.example)
+/uploads/
+
 # production
 /build
 
