@@ -121,6 +121,27 @@ export async function addPiece(
   );
 }
 
+export async function renamePiece(
+  courseId: string,
+  pieceId: string,
+  title: string,
+) {
+  const sessionId = await pieceSessionId(pieceId);
+  if (!sessionId) return;
+
+  const trimmed = title.trim();
+  if (!trimmed) throw new Error("Title is required.");
+
+  await requireSessionEditAccess(sessionId);
+  await requireCourseOpen(courseId);
+  await db
+    .update(sessionPieces)
+    .set({ title: trimmed })
+    .where(eq(sessionPieces.id, pieceId));
+
+  revalidatePath(`/courses/${courseId}/timetable/session/${sessionId}`);
+}
+
 export async function deletePiece(courseId: string, pieceId: string) {
   const sessionId = await pieceSessionId(pieceId);
   if (!sessionId) return;

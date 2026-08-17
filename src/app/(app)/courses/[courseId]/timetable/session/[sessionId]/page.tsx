@@ -16,16 +16,11 @@ import {
   skills,
   skillTypes,
 } from "@/db/schema";
-import { DeleteButton } from "@/components/delete-button";
 import { PrintButton } from "@/components/print-button";
 import { AddPieceForm } from "./add-piece-form";
 import { InstrumentSelector } from "./instrument-selector";
-import { AttachPieceDocument } from "./attach-piece-document";
-import {
-  setParticipantInstrument,
-  deletePiece,
-  detachDocumentFromPiece,
-} from "./actions";
+import { PieceRow } from "./piece-row";
+import { setParticipantInstrument } from "./actions";
 
 export default async function SessionDetailPage({
   params,
@@ -212,58 +207,31 @@ export default async function SessionDetailPage({
         )}
         {pieces.length > 0 && (
           <ul className="mb-3 flex flex-col gap-2">
-            {pieces.map((piece) => (
-              <li key={piece.id} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm">
-                    <span className="mr-2 text-muted-foreground">&bull;</span>
-                    {piece.title}
-                  </span>
-                  {canEdit && (
-                    <span className="print:hidden">
-                      <DeleteButton
-                        action={deletePiece.bind(null, courseId, piece.id)}
-                      />
-                    </span>
-                  )}
-                </div>
-                {piece.documentId ? (
-                  <div className="ml-4 flex items-center justify-between gap-2">
+            {pieces.map((piece) =>
+              canEdit ? (
+                <PieceRow
+                  key={piece.id}
+                  courseId={courseId}
+                  piece={piece}
+                  availableDocuments={availableDocuments}
+                />
+              ) : (
+                <li key={piece.id} className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">&bull;</span>
+                  <span>{piece.title}</span>
+                  {piece.documentId && (
                     <a
                       href={`/documents/${piece.documentId}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm underline"
+                      className="text-xs text-muted-foreground underline"
                     >
                       {piece.documentFilename}
                     </a>
-                    {canEdit && (
-                      <span className="print:hidden">
-                        <DeleteButton
-                          action={detachDocumentFromPiece.bind(
-                            null,
-                            courseId,
-                            piece.id,
-                          )}
-                          label="Remove file"
-                          confirmMessage="Remove this file from this piece? It stays available in the document library."
-                        />
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  canEdit && (
-                    <div className="ml-4 print:hidden">
-                      <AttachPieceDocument
-                        courseId={courseId}
-                        pieceId={piece.id}
-                        availableDocuments={availableDocuments}
-                      />
-                    </div>
-                  )
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              ),
+            )}
           </ul>
         )}
         {canEdit && (
