@@ -1,5 +1,7 @@
+import Link from "next/link";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { skillTypes } from "@/db/schema";
+import { skillTypes, skills } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { DeleteButton } from "@/components/delete-button";
 import { AddSkillTypeForm } from "./add-skill-type-form";
@@ -9,10 +11,15 @@ import { deleteSkillType, updateSkillType } from "./actions";
 export default async function SkillTypesPage() {
   await requireOrganiserOrAdminPage();
 
-  const types = await db
-    .select()
-    .from(skillTypes)
-    .orderBy(skillTypes.group, skillTypes.name);
+  const [types, counts] = await Promise.all([
+    db.select().from(skillTypes).orderBy(skillTypes.group, skillTypes.name),
+    db
+      .select({ skillTypeId: skills.skillTypeId, count: sql<number>`count(*)::int` })
+      .from(skills)
+      .groupBy(skills.skillTypeId),
+  ]);
+
+  const countByType = new Map(counts.map((c) => [c.skillTypeId, c.count]));
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-6 p-8">
@@ -34,12 +41,18 @@ export default async function SkillTypesPage() {
             className="flex items-center justify-between rounded-md border px-3 py-2"
           >
             <span>
-              {type.name}
+              <Link href={`/skill-types/${type.id}`} className="hover:underline">
+                {type.name}
+              </Link>
               {type.group && (
                 <span className="ml-2 text-sm text-muted-foreground">
                   {type.group}
                 </span>
               )}
+              <span className="ml-2 text-sm text-muted-foreground">
+                {countByType.get(type.id) ?? 0}{" "}
+                {countByType.get(type.id) === 1 ? "person" : "people"}
+              </span>
             </span>
             <EditSkillTypeDialog
               action={updateSkillType.bind(null, type.id)}
