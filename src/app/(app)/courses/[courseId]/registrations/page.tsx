@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { requireOrganiserOrAdminPage } from "@/lib/auth-helpers";
 import { isCourseClosed } from "@/lib/course-status";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -66,6 +67,10 @@ export default async function CourseRegistrationsPage({
     .where(eq(courseRegistrations.courseId, courseId))
     .orderBy(desc(courseRegistrations.createdAt));
 
+  const acceptedCount = registrations.filter(
+    (r) => r.status === "accepted",
+  ).length;
+
   const unregisteredPeople = await getUnregisteredPeople(courseId);
   const sessionCounts = await getSessionCounts(courseId);
   const closed = isCourseClosed(course);
@@ -115,20 +120,30 @@ export default async function CourseRegistrationsPage({
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
-      <div>
-        <Link
-          href={`/courses/${course.id}`}
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← {course.name}
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold">
-          Registrations ({registrations.length})
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Only accepted students appear in the timetable&apos;s student list
-          and can be scheduled into sessions.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Link
+            href={`/courses/${course.id}`}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← {course.name}
+          </Link>
+          <h1 className="mt-2 text-xl font-semibold">
+            Registrations ({registrations.length})
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Only accepted students appear in the timetable&apos;s student list
+            and can be scheduled into sessions.
+          </p>
+        </div>
+        {acceptedCount > 0 && (
+          <a
+            href={`/courses/${courseId}/registrations/export`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Export accepted students (CSV)
+          </a>
+        )}
       </div>
 
       {!closed && (
