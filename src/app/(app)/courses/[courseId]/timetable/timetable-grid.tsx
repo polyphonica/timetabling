@@ -205,7 +205,7 @@ export function TimetableGrid({
       {visibleDays.map((day, index) => (
         <div
           key={day.id}
-          className={`overflow-x-auto print:break-inside-avoid${index > 0 ? " print:break-before-page" : ""}`}
+          className={`overflow-x-auto${index > 0 ? " print:break-before-page" : ""}`}
         >
           <h2 className="mb-2 font-medium">
             {day.date}
@@ -235,7 +235,10 @@ export function TimetableGrid({
             <tbody>
               {day.slots.map((slot) =>
                 slot.kind === "break" ? (
-                  <tr key={slot.id} className="bg-muted/50">
+                  <tr
+                    key={slot.id}
+                    className="bg-muted/50 print:break-inside-avoid"
+                  >
                     <td className="p-2 text-muted-foreground">
                       {slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}
                     </td>
@@ -247,7 +250,10 @@ export function TimetableGrid({
                     </td>
                   </tr>
                 ) : (
-                  <tr key={slot.id} className="align-top">
+                  <tr
+                    key={slot.id}
+                    className="align-top print:break-inside-avoid"
+                  >
                     <td className="p-2 text-muted-foreground">
                       {slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}
                     </td>

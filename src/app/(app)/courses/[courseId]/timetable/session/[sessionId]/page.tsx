@@ -161,7 +161,7 @@ export default async function SessionDetailPage({
       </div>
 
       {/* Participants */}
-      <section className="print:break-inside-avoid">
+      <section>
         <h2 className="mb-3 font-medium">Participants</h2>
         {participantRows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -203,7 +203,7 @@ export default async function SessionDetailPage({
       </section>
 
       {/* Pieces */}
-      <section className="print:break-inside-avoid">
+      <section>
         <h2 className="mb-3 font-medium">Pieces</h2>
         {pieces.length === 0 && !canEdit && (
           <p className="text-sm text-muted-foreground">No pieces added yet.</p>

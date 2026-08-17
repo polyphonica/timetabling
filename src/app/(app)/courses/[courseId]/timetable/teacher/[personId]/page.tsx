@@ -86,19 +86,19 @@ export default async function TeacherTimetablePage({
           .map(({ day, relevantSlots }, index) => (
             <div
               key={day.id}
-              className={`print:break-inside-avoid${index > 0 ? " print:break-before-page" : ""}`}
+              className={index > 0 ? "print:break-before-page" : undefined}
             >
               <h2 className="mb-2 font-medium">
                 {day.date}
                 {day.label && <span className="ml-2">{day.label}</span>}
               </h2>
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2 print:block print:space-y-2">
                 {relevantSlots.map((slot) => {
                   if (slot.kind === "break") {
                     return (
                       <li
                         key={slot.id}
-                        className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground"
+                        className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground print:break-inside-avoid"
                       >
                         {slot.startTime.slice(0, 5)}–
                         {slot.endTime.slice(0, 5)} {slot.label ?? "Break"}
@@ -109,7 +109,10 @@ export default async function TeacherTimetablePage({
                     s.teachers.some((t) => t.id === personId),
                   );
                   return mySessions.map((session) => (
-                    <li key={session.id} className="rounded-md border p-3">
+                    <li
+                      key={session.id}
+                      className="rounded-md border p-3 print:break-inside-avoid"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">
