@@ -66,14 +66,17 @@ export async function updateSkillType(
   return undefined;
 }
 
-export async function deleteSkillType(skillTypeId: string) {
+export async function deleteSkillType(
+  skillTypeId: string,
+): Promise<ActionState> {
   await requireOrganiserOrAdmin();
   try {
     await db.delete(skillTypes).where(eq(skillTypes.id, skillTypeId));
   } catch {
-    throw new Error(
-      "Can't remove a skill type that's still assigned to someone.",
-    );
+    return {
+      error: "Can't remove a skill type that's still assigned to someone.",
+    };
   }
   revalidatePath("/skill-types");
+  return undefined;
 }

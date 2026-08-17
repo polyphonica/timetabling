@@ -66,14 +66,17 @@ export async function updateInterestType(
   return undefined;
 }
 
-export async function deleteInterestType(interestTypeId: string) {
+export async function deleteInterestType(
+  interestTypeId: string,
+): Promise<ActionState> {
   await requireOrganiserOrAdmin();
   try {
     await db.delete(interestTypes).where(eq(interestTypes.id, interestTypeId));
   } catch {
-    throw new Error(
-      "Can't remove an interest that's still selected on a registration.",
-    );
+    return {
+      error: "Can't remove an interest that's still selected on a registration.",
+    };
   }
   revalidatePath("/interest-types");
+  return undefined;
 }

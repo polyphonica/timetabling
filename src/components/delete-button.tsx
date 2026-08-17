@@ -10,7 +10,7 @@ export function DeleteButton({
   label = "Remove",
   confirmMessage,
 }: {
-  action: () => Promise<void>;
+  action: () => Promise<void | { error?: string } | undefined>;
   label?: string;
   confirmMessage?: string;
 }) {
@@ -22,7 +22,10 @@ export function DeleteButton({
     }
     startTransition(async () => {
       try {
-        await action();
+        const result = await action();
+        if (result?.error) {
+          toast.error(result.error);
+        }
       } catch (err) {
         unstable_rethrow(err);
         toast.error(err instanceof Error ? err.message : "Something went wrong");
