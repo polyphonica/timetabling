@@ -71,18 +71,23 @@ export default async function TeacherTimetablePage({
       </div>
 
       <div className="flex flex-col gap-6">
-        {timetable.days.map((day) => {
-          const relevantSlots = day.slots.filter(
-            (slot) =>
-              slot.kind === "break" ||
-              slot.sessions.some((s) =>
-                s.teachers.some((t) => t.id === personId),
-              ),
-          );
-          if (relevantSlots.length === 0) return null;
-
-          return (
-            <div key={day.id} className="print:break-inside-avoid print:break-before-page">
+        {timetable.days
+          .map((day) => ({
+            day,
+            relevantSlots: day.slots.filter(
+              (slot) =>
+                slot.kind === "break" ||
+                slot.sessions.some((s) =>
+                  s.teachers.some((t) => t.id === personId),
+                ),
+            ),
+          }))
+          .filter(({ relevantSlots }) => relevantSlots.length > 0)
+          .map(({ day, relevantSlots }, index) => (
+            <div
+              key={day.id}
+              className={`print:break-inside-avoid${index > 0 ? " print:break-before-page" : ""}`}
+            >
               <h2 className="mb-2 font-medium">
                 {day.date}
                 {day.label && <span className="ml-2">{day.label}</span>}
@@ -147,8 +152,7 @@ export default async function TeacherTimetablePage({
                 })}
               </ul>
             </div>
-          );
-        })}
+          ))}
         {timetable.days.every(
           (day) =>
             !day.slots.some((slot) =>

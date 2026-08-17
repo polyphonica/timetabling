@@ -202,8 +202,11 @@ export function TimetableGrid({
         )}
       </div>
 
-      {visibleDays.map((day) => (
-        <div key={day.id} className="overflow-x-auto print:break-inside-avoid print:break-before-page">
+      {visibleDays.map((day, index) => (
+        <div
+          key={day.id}
+          className={`overflow-x-auto print:break-inside-avoid${index > 0 ? " print:break-before-page" : ""}`}
+        >
           <h2 className="mb-2 font-medium">
             {day.date}
             {day.label && <span className="ml-2">{day.label}</span>}
