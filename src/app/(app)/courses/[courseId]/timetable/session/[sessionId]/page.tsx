@@ -126,7 +126,7 @@ export default async function SessionDetailPage({
     : sessionRow.dayDate;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8 print:gap-4 print:p-0">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -161,7 +161,7 @@ export default async function SessionDetailPage({
       </div>
 
       {/* Participants */}
-      <section>
+      <section className="print:break-inside-avoid">
         <h2 className="mb-3 font-medium">Participants</h2>
         {participantRows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -171,7 +171,10 @@ export default async function SessionDetailPage({
           <table className="w-full text-sm">
             <tbody>
               {participantRows.map((p) => (
-                <tr key={p.id} className="border-b last:border-0">
+                <tr
+                  key={p.id}
+                  className="border-b last:border-0 print:break-inside-avoid"
+                >
                   <td className="py-2 font-medium">{p.name}</td>
                   <td className="py-2 text-right">
                     {canEdit ? (
@@ -200,7 +203,7 @@ export default async function SessionDetailPage({
       </section>
 
       {/* Pieces */}
-      <section>
+      <section className="print:break-inside-avoid">
         <h2 className="mb-3 font-medium">Pieces</h2>
         {pieces.length === 0 && !canEdit && (
           <p className="text-sm text-muted-foreground">No pieces added yet.</p>
