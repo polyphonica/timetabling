@@ -126,7 +126,7 @@ export default async function SessionDetailPage({
     : sessionRow.dayDate;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8 print:gap-4 print:p-0">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8 print:block print:space-y-4 print:p-0">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -209,7 +209,7 @@ export default async function SessionDetailPage({
           <p className="text-sm text-muted-foreground">No pieces added yet.</p>
         )}
         {pieces.length > 0 && (
-          <ul className="mb-3 flex flex-col gap-2">
+          <ul className="mb-3 flex flex-col gap-2 print:block print:space-y-2">
             {pieces.map((piece) =>
               canEdit ? (
                 <PieceRow

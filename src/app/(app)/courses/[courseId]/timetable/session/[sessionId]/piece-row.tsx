@@ -83,7 +83,7 @@ export function PieceRow({
   }
 
   return (
-    <li className="flex flex-col gap-1.5">
+    <li className="flex flex-col gap-1.5 print:block print:break-inside-avoid">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <span className="text-muted-foreground">&bull;</span>
