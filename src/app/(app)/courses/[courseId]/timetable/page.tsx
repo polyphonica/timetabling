@@ -32,7 +32,7 @@ export default async function TimetablePage({
   const currentPersonId = session!.user.personId;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-8 print:block print:space-y-4 print:p-0">
       <div className="flex items-start justify-between">
         <div>
           {canEdit && (

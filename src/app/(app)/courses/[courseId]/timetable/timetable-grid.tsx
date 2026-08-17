@@ -150,7 +150,7 @@ export function TimetableGrid({
   }
 
   const grid = (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 print:block print:space-y-4">
       <div className="flex flex-wrap items-center gap-4 print:hidden">
         <div className="flex items-center gap-2">
           <Button
