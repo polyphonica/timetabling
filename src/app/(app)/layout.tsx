@@ -25,7 +25,7 @@ export default async function AppLayout({
   const liveCourse = await getLiveCourse();
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col print:grow-0">
       <header className="flex items-center justify-between border-b px-6 py-3 print:hidden">
         <nav className="flex items-center gap-4">
           <Link
@@ -88,7 +88,7 @@ export default async function AppLayout({
           <SignOutButton />
         </div>
       </header>
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col print:grow-0">{children}</main>
     </div>
   );
 }
