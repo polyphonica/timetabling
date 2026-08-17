@@ -32,10 +32,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontSans.variable} ${fontDisplay.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fontSans.variable} ${fontDisplay.variable} ${geistMono.variable} h-full antialiased print:h-auto`}
     >
-      <body className="min-h-full flex flex-col">
-        <div className="flex flex-1 flex-col">{children}</div>
+      <body className="min-h-full flex flex-col print:min-h-0">
+        <div className="flex flex-1 flex-col print:grow-0">{children}</div>
         <Footer />
         <Toaster />
       </body>
