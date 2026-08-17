@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import { db } from "@/db";
@@ -9,7 +9,6 @@ import {
   timeSlots,
   rooms,
   sessions,
-  sessionTeachers,
   threads,
   messages,
   people,
@@ -27,8 +26,6 @@ export default async function MessagesPage({
 
   const { courseId } = await params;
   const personId = session.user.personId;
-  const isOrgOrAdmin =
-    session.user.role === "admin" || session.user.role === "organiser";
 
   const [course] = await db
     .select({ id: courses.id, name: courses.name })
@@ -40,9 +37,10 @@ export default async function MessagesPage({
     notFound();
   }
 
-  // Fetch all threads for this course, joining through the session/slot/day chain.
-  // Teachers get an extra join to restrict to their own sessions.
-  const baseQuery = db
+  // Every logged-in user (organiser, admin, or any tutor) sees every
+  // session's thread for this course, matching the master timetable where
+  // the message icon and dialog are likewise open to all.
+  const threadRows = await db
     .select({
       threadId: threads.id,
       sessionId: sessions.id,
@@ -59,33 +57,6 @@ export default async function MessagesPage({
     .innerJoin(courseDays, eq(timeSlots.courseDayId, courseDays.id))
     .leftJoin(rooms, eq(sessions.roomId, rooms.id))
     .where(eq(courseDays.courseId, courseId));
-
-  const threadRows = isOrgOrAdmin
-    ? await baseQuery
-    : await db
-        .select({
-          threadId: threads.id,
-          sessionId: sessions.id,
-          sessionTitle: sessions.title,
-          roomName: rooms.name,
-          startTime: timeSlots.startTime,
-          endTime: timeSlots.endTime,
-          date: courseDays.date,
-          dayLabel: courseDays.label,
-        })
-        .from(threads)
-        .innerJoin(sessions, eq(threads.sessionId, sessions.id))
-        .innerJoin(
-          sessionTeachers,
-          and(
-            eq(sessionTeachers.sessionId, sessions.id),
-            eq(sessionTeachers.personId, personId),
-          ),
-        )
-        .innerJoin(timeSlots, eq(sessions.timeSlotId, timeSlots.id))
-        .innerJoin(courseDays, eq(timeSlots.courseDayId, courseDays.id))
-        .leftJoin(rooms, eq(sessions.roomId, rooms.id))
-        .where(eq(courseDays.courseId, courseId));
 
   // Fetch all messages for those threads
   const threadIds = threadRows.map((r) => r.threadId);
