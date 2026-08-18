@@ -85,6 +85,12 @@ export default async function AppLayout({
           <span className="text-sm text-muted-foreground">
             {session?.user?.name} ({session?.user?.role})
           </span>
+          <Link
+            href="/account"
+            className="text-sm text-muted-foreground hover:text-primary"
+          >
+            Change password
+          </Link>
           <SignOutButton />
         </div>
       </header>
