@@ -64,6 +64,16 @@ export default async function HomePage() {
       title: "Skill Types",
       description: "Manage the list of instruments and voice parts.",
     },
+    {
+      href: "/interest-types",
+      title: "Interests",
+      description: "Manage the list of activities and ensembles students can select.",
+    },
+    {
+      href: "/documents",
+      title: "Documents",
+      description: "Upload and manage sheet music and other course documents.",
+    },
     ...(activeCourse
       ? [
           {
