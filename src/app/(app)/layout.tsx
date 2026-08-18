@@ -62,6 +62,14 @@ export default async function AppLayout({
               Timetable
             </Link>
           )}
+          {liveCourse && (
+            <Link
+              href={`/courses/${liveCourse.id}/tasks`}
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              Tasks
+            </Link>
+          )}
           {liveCourse && canManage && (
             <Link
               href={`/courses/${liveCourse.id}/registrations`}

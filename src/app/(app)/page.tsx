@@ -38,6 +38,12 @@ export default async function HomePage() {
                 My timetable
               </Link>
             )}
+            <Link
+              href={`/courses/${activeCourse.id}/tasks`}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              My tasks
+            </Link>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

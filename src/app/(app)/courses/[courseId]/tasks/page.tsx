@@ -20,6 +20,8 @@ export default async function TasksPage({
 
   const { courseId } = await params;
   const personId = session.user.personId;
+  const canManage =
+    session.user.role === "admin" || session.user.role === "organiser";
 
   const [course] = await db
     .select({ id: courses.id, name: courses.name })
@@ -46,7 +48,7 @@ export default async function TasksPage({
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8">
       <div>
         <Link
-          href={`/courses/${courseId}`}
+          href={canManage ? `/courses/${courseId}` : "/"}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← {course.name}
