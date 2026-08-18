@@ -1,0 +1,1 @@
+ALTER TABLE "course_registrations" ADD COLUMN "privacy_notice_acknowledged" boolean DEFAULT false NOT NULL;

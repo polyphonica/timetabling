@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, unique, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, unique, pgEnum } from "drizzle-orm/pg-core";
 import { courses } from "./courses";
 import { people } from "./people";
 
@@ -30,6 +30,9 @@ export const courseRegistrations = pgTable(
     rejectionReason: rejectionReasonEnum("rejection_reason"),
     rejectionNotes: text("rejection_notes"),
     withdrawalNotes: text("withdrawal_notes"),
+    privacyNoticeAcknowledged: boolean("privacy_notice_acknowledged")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

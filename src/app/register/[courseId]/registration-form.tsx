@@ -265,6 +265,21 @@ export function RegistrationForm({
             )}
           </dl>
 
+          <div className="flex items-center gap-2">
+            <Checkbox id="privacyAccepted" name="privacyAccepted" required />
+            <Label htmlFor="privacyAccepted" className="font-normal">
+              I have read and agree to the{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                privacy notice
+              </a>
+            </Label>
+          </div>
+
           {state?.error && (
             <p className="text-sm text-destructive">{state.error}</p>
           )}
