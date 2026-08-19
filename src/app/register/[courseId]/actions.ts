@@ -8,22 +8,11 @@ import {
   skills,
   courseRegistrations,
   registrationInterests,
+  interestTypes,
 } from "@/db/schema";
 import { requireCourseOpen } from "@/lib/course-status";
 
 export type ActionState = { error?: string; success?: boolean } | undefined;
-
-const registrationSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().min(1, "Phone number is required"),
-  skillTypeIds: z.array(z.string()).min(1, "Select at least one instrument"),
-  interestTypeIds: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-  privacyAccepted: z.literal("on", {
-    message: "You must confirm you've read the privacy notice",
-  }),
-});
 
 export async function registerStudent(
   courseId: string,
@@ -40,6 +29,25 @@ export async function registerStudent(
           : "Registration is closed for this course.",
     };
   }
+
+  const [hasInterestTypes] = await db
+    .select({ id: interestTypes.id })
+    .from(interestTypes)
+    .limit(1);
+
+  const registrationSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Enter a valid email address"),
+    phone: z.string().min(1, "Phone number is required"),
+    skillTypeIds: z.array(z.string()).min(1, "Select at least one instrument"),
+    interestTypeIds: hasInterestTypes
+      ? z.array(z.string()).min(1, "Select at least one interest")
+      : z.array(z.string()).optional(),
+    notes: z.string().optional(),
+    privacyAccepted: z.literal("on", {
+      message: "You must confirm you've read the privacy notice",
+    }),
+  });
 
   const parsed = registrationSchema.safeParse({
     name: formData.get("name"),

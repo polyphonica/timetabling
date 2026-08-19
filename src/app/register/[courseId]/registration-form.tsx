@@ -55,6 +55,7 @@ export function RegistrationForm({
   const [reviewData, setReviewData] = useState<ReviewSnapshot | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [interestError, setInterestError] = useState<string | null>(null);
 
   const skillTypesById = useMemo(
     () => new Map(skillTypes.map((t) => [t.id, t])),
@@ -90,6 +91,12 @@ export function RegistrationForm({
     setClientError(null);
 
     const interestIds = fd.getAll("interestTypeIds") as string[];
+    if (interestTypes.length > 0 && interestIds.length === 0) {
+      setInterestError("Select at least one interest");
+      return;
+    }
+    setInterestError(null);
+
     setReviewData({
       name: String(fd.get("name") ?? ""),
       email: String(fd.get("email") ?? ""),
@@ -204,6 +211,9 @@ export function RegistrationForm({
                 </div>
               </div>
             ))}
+            {interestError && (
+              <p className="text-sm text-destructive">{interestError}</p>
+            )}
           </div>
         )}
 
